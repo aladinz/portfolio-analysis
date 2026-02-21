@@ -1,0 +1,552 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Roth IRA — /summarize</title>
+  <link rel="stylesheet" href="portfolio.css" />
+  <style>
+    /* ── Summarize accent: emerald green ── */
+    .cmd-chip { background: #0d3326; color: #34d399; border-color: rgba(52,211,153,0.25); }
+
+    /* ── Executive snapshot band ── */
+    .exec-band {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 1px;
+      background: var(--border);
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+      margin-bottom: 32px;
+    }
+    .exec-band-cell {
+      background: var(--bg-card);
+      padding: 24px 20px;
+      text-align: center;
+    }
+    .exec-band-label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.07em; color: var(--text-muted); margin-bottom: 8px; }
+    .exec-band-val   { font-size: 32px; font-weight: 900; line-height: 1; margin-bottom: 4px; }
+    .exec-band-sub   { font-size: 12px; color: var(--text-secondary); }
+
+    /* ── Verdict card ── */
+    .verdict-card {
+      background: linear-gradient(135deg, #1a2230 0%, #1a1d27 100%);
+      border: 1px solid rgba(52,211,153,0.2);
+      border-radius: var(--radius-lg);
+      padding: 32px 36px;
+      display: flex;
+      align-items: flex-start;
+      gap: 28px;
+      margin-bottom: 32px;
+    }
+    .verdict-icon {
+      width: 56px; height: 56px;
+      border-radius: 14px;
+      background: rgba(52,211,153,0.12);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 26px; flex-shrink: 0;
+    }
+    .verdict-body h2 { font-size: 20px; font-weight: 700; margin-bottom: 10px; }
+    .verdict-body p  { font-size: 14px; color: var(--text-secondary); line-height: 1.75; }
+
+    /* ── Three-column pillars ── */
+    .pillars-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+      margin-bottom: 32px;
+    }
+    .pillar-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: 20px;
+    }
+    .pillar-icon  { font-size: 22px; margin-bottom: 10px; }
+    .pillar-title { font-size: 14px; font-weight: 700; margin-bottom: 8px; }
+    .pillar-body  { font-size: 13px; color: var(--text-secondary); line-height: 1.65; }
+
+    /* ── Findings summary strip ── */
+    .findings-strip { display: flex; flex-direction: column; gap: 0; }
+    .finding-item {
+      display: flex; align-items: flex-start; gap: 14px;
+      padding: 14px 0; border-bottom: 1px solid var(--border);
+    }
+    .finding-item:last-child { border-bottom: none; }
+    .finding-dot {
+      width: 10px; height: 10px; border-radius: 50%;
+      flex-shrink: 0; margin-top: 5px;
+    }
+    .dot-red    { background: #f87171; }
+    .dot-yellow { background: #fbbf24; }
+    .dot-blue   { background: #60a5fa; }
+    .dot-green  { background: #34d399; }
+    .finding-text { font-size: 13px; color: var(--text-secondary); line-height: 1.6; }
+    .finding-text strong { color: var(--text-primary); }
+
+    /* ── Optimization summary table ── */
+    .opt-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    .opt-table th {
+      text-align: left; padding: 10px 12px;
+      background: var(--bg-card-alt); color: var(--text-secondary);
+      font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em;
+      border-bottom: 1px solid var(--border);
+    }
+    .opt-table td { padding: 11px 12px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+    .opt-table tr:last-child td { border-bottom: none; }
+    .opt-table tr:hover td { background: var(--bg-hover); }
+
+    /* ── What to watch ── */
+    .watch-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+    }
+    .watch-item {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: 16px 18px;
+      display: flex; align-items: flex-start; gap: 12px;
+    }
+    .watch-num {
+      width: 24px; height: 24px; border-radius: 50%;
+      background: var(--bg-card-alt); color: var(--text-muted);
+      font-size: 11px; font-weight: 700; display: flex;
+      align-items: center; justify-content: center; flex-shrink: 0; margin-top: 1px;
+    }
+    .watch-title { font-size: 13px; font-weight: 600; margin-bottom: 4px; }
+    .watch-body  { font-size: 12px; color: var(--text-secondary); line-height: 1.6; }
+
+    /* ── Overall grade hero ── */
+    .grade-hero {
+      background: linear-gradient(135deg, #1a2230, #12142080);
+      border: 1px solid rgba(96,165,250,0.2);
+      border-radius: var(--radius-xl);
+      padding: 40px 36px;
+      display: flex; align-items: center; gap: 36px;
+    }
+    .grade-hero-letter {
+      font-size: 96px; font-weight: 900; line-height: 1;
+      color: #60a5fa; text-shadow: 0 0 50px rgba(96,165,250,0.25);
+      flex-shrink: 0;
+    }
+    .grade-hero-content h2 { font-size: 22px; font-weight: 700; margin-bottom: 10px; }
+    .grade-hero-content p  { font-size: 14px; color: var(--text-secondary); line-height: 1.75; }
+
+    .grade-dims {
+      display: flex; gap: 10px; margin-top: 16px; flex-wrap: wrap;
+    }
+    .grade-dim-pill {
+      padding: 6px 14px; border-radius: 20px;
+      font-size: 12px; font-weight: 600; border: 1px solid;
+      display: flex; align-items: center; gap: 6px;
+    }
+
+    @media (max-width: 700px) {
+      .exec-band    { grid-template-columns: 1fr 1fr; }
+      .pillars-grid { grid-template-columns: 1fr; }
+      .watch-grid   { grid-template-columns: 1fr; }
+      .grade-hero   { flex-direction: column; text-align: center; }
+      .verdict-card { flex-direction: column; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ── Top Bar ─────────────────────────────────────────────── -->
+<nav class="top-bar">
+  <div class="top-bar-inner">
+    <div class="top-bar-brand">
+      <div class="brand-icon">R</div>
+      <span class="brand-name">Portfolio Intelligence</span>
+    </div>
+    <div class="top-bar-meta">
+      <span class="meta-chip">Roth IRA</span>
+      <span class="meta-chip">Feb 21, 2026</span>
+      <span class="meta-chip cmd-chip">/summarize</span>
+    </div>
+  </div>
+</nav>
+
+<!-- ── Export Button ──────────────────────────────────────── -->
+<button class="pdf-export-btn" id="pdfBtn" onclick="exportPDF()">
+  <span class="btn-icon">↓</span>
+  <span class="btn-label">Export PDF</span>
+</button>
+
+<div class="page-wrapper">
+
+  <!-- ── Hero ─────────────────────────────────────────────── -->
+  <header class="report-hero">
+    <div class="hero-eyebrow">
+      <span class="badge badge-outline">Executive Summary</span>
+      <span class="badge badge-outline">Roth IRA · 8 Positions</span>
+      <span class="badge badge-outline">Feb 21, 2026</span>
+    </div>
+    <h1 class="hero-title">Roth IRA — Full Intelligence Summary</h1>
+    <p class="hero-sub">Consolidated findings from /scan and /optimize. One page. Everything that matters.</p>
+  </header>
+
+  <!-- ── Executive Snapshot Band ───────────────────────────── -->
+  <div class="exec-band">
+    <div class="exec-band-cell">
+      <div class="exec-band-label">Scan Grade</div>
+      <div class="exec-band-val" style="color:#fbbf24;">B–</div>
+      <div class="exec-band-sub">Before optimization</div>
+    </div>
+    <div class="exec-band-cell">
+      <div class="exec-band-label">Optimized Grade</div>
+      <div class="exec-band-val" style="color:#60a5fa;">B+</div>
+      <div class="exec-band-sub">After 3 targeted changes</div>
+    </div>
+    <div class="exec-band-cell">
+      <div class="exec-band-label">Critical Issues</div>
+      <div class="exec-band-val" style="color:#f87171;">2</div>
+      <div class="exec-band-sub">1 resolved · 1 reduced</div>
+    </div>
+    <div class="exec-band-cell">
+      <div class="exec-band-label">Growth Thesis</div>
+      <div class="exec-band-val" style="color:#34d399;">Intact</div>
+      <div class="exec-band-sub">100% preserved post-optimization</div>
+    </div>
+  </div>
+
+  <!-- ── Verdict ───────────────────────────────────────────── -->
+  <div class="verdict-card">
+    <div class="verdict-icon">🎯</div>
+    <div class="verdict-body">
+      <h2>Bottom Line</h2>
+      <p>
+        This is a <strong style="color:var(--text-primary);">high-conviction, long-horizon growth portfolio</strong> built correctly around a zero-cost total market core (FZROX 41%). 
+        The setup excels in AI/tech bull regimes — exactly what 2023–2025 delivered. The structural weaknesses were 
+        <strong style="color:var(--text-primary);">hidden semiconductor concentration (~35% effective)</strong>, 
+        <strong style="color:var(--text-primary);">zero inflation protection</strong>, and a 
+        <strong style="color:var(--text-primary);">double-counted AVGO bet</strong> inside SMH. 
+        Three targeted changes — drop AVGO, trim VRT, add IAU — resolve the most urgent issues without touching the growth engine. 
+        The result is a cleaner, more resilient portfolio that still outperforms strongly in risk-on regimes.
+      </p>
+    </div>
+  </div>
+
+  <!-- ── Three Pillars ─────────────────────────────────────── -->
+  <div class="pillars-grid">
+    <div class="pillar-card" style="border-color:rgba(108,138,255,0.25);">
+      <div class="pillar-icon">🏗️</div>
+      <div class="pillar-title">What Works</div>
+      <div class="pillar-body">
+        FZROX is the ideal anchor — zero cost, full US market coverage. XLV provides genuine defensive diversification (low tech correlation). SCHD adds a value/income factor tilt. 
+        The core/satellite architecture is sound and the Roth IRA tax-shelter is used correctly for high-growth assets.
+      </div>
+    </div>
+    <div class="pillar-card" style="border-color:rgba(248,113,113,0.25);">
+      <div class="pillar-icon">⚠️</div>
+      <div class="pillar-title">What Was Wrong</div>
+      <div class="pillar-body">
+        AVGO was double-counted — already a top-5 SMH holding at ~8% weight, then held again directly. VRT at 6.5% exceeded the single-stock safety cap. 
+        Zero real-asset exposure meant stagflation was an undefended blind spot. Declared tech was 21.5%; effective tech after FZROX look-through was ~35%.
+      </div>
+    </div>
+    <div class="pillar-card" style="border-color:rgba(52,211,153,0.25);">
+      <div class="pillar-icon">✅</div>
+      <div class="pillar-title">What Changed</div>
+      <div class="pillar-body">
+        AVGO eliminated → capital freed. VRT trimmed from 6.5% → 4%. IAU (gold) added at 5% — closes the inflation/stagflation gap. 
+        Cash raised from 2.5% → 3%. Portfolio beta reduced from ~1.28 to ~1.18. Grade lifted from B– to B+.
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Scan Findings at a Glance ─────────────────────────── -->
+  <section class="report-section">
+    <div class="section-header">
+      <div class="section-number">01</div>
+      <div>
+        <h2 class="section-title">Scan Findings at a Glance</h2>
+        <p class="section-sub">All diagnostic flags, severity-ranked</p>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="findings-strip">
+        <div class="finding-item">
+          <div class="finding-dot dot-red"></div>
+          <div class="finding-text"><strong>Critical — Zero inflation protection.</strong> 100% equity with no TIPS, commodities, or real assets. Stagflation (high CPI + slow growth) was an undefended worst-case regime. Resolved by adding IAU at 5%.</div>
+        </div>
+        <div class="finding-item">
+          <div class="finding-dot dot-red"></div>
+          <div class="finding-text"><strong>Critical — Hidden semiconductor concentration ~35% effective.</strong> Declared tech: ~21.5% (SMH + VRT + AVGO). After FZROX look-through (28% tech weight × 41%), effective tech/semi exposure reaches ~35%. Two simultaneous crises: a semi bear hits all three positions together.</div>
+        </div>
+        <div class="finding-item">
+          <div class="finding-dot dot-yellow"></div>
+          <div class="finding-text"><strong>Warning — VRT single-stock idiosyncratic risk at 6.5%.</strong> Vertiv fell –70% in 2022. At 6.5%, a repeat wipes –4.5% from the portfolio in one name. Now trimmed to 4% — thesis intact, risk capped.</div>
+        </div>
+        <div class="finding-item">
+          <div class="finding-dot dot-yellow"></div>
+          <div class="finding-text"><strong>Warning — AVGO double-counted in SMH.</strong> Direct 3% AVGO + ~1% embedded in SMH = ~4% effective AVGO. Resolved by eliminating the direct position; semi conviction preserved through SMH alone.</div>
+        </div>
+        <div class="finding-item">
+          <div class="finding-dot dot-yellow"></div>
+          <div class="finding-text"><strong>Warning — Cash at 2.5% (too thin).</strong> In a –30% drawdown, 2.5% allows almost no tactical rebalancing. Raised to 3%.</div>
+        </div>
+        <div class="finding-item">
+          <div class="finding-dot dot-blue"></div>
+          <div class="finding-text"><strong>Info — International underweight (10% vs ~40% global cap weight).</strong> Deliberate US tilt — not wrong — but means no benefit from dollar weakness or non-US growth cycles. No change made; user preference respected.</div>
+        </div>
+        <div class="finding-item">
+          <div class="finding-dot dot-green"></div>
+          <div class="finding-text"><strong>Pass — XLV is a genuine diversifier.</strong> Low tech correlation. Performs well in recessions and rate shocks. One of the few true risk-off buffers. Size (13%) is appropriate. No change.</div>
+        </div>
+        <div class="finding-item">
+          <div class="finding-dot dot-green"></div>
+          <div class="finding-text"><strong>Pass — FZROX is the ideal core.</strong> 0% expense ratio. Total US market coverage. Correct as the largest position. No action needed.</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── Optimization Moves ─────────────────────────────────── -->
+  <section class="report-section">
+    <div class="section-header">
+      <div class="section-number">02</div>
+      <div>
+        <h2 class="section-title">Optimization Moves</h2>
+        <p class="section-sub">Three changes, maximum structural impact</p>
+      </div>
+    </div>
+
+    <div class="card">
+      <table class="opt-table">
+        <thead>
+          <tr>
+            <th>Move</th>
+            <th>Ticker</th>
+            <th>Change</th>
+            <th>Impact</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><span class="badge" style="background:#3b1010; color:#f87171; border:1px solid rgba(248,113,113,0.3);">Eliminate</span></td>
+            <td><span class="ticker-badge">AVGO</span></td>
+            <td style="font-family:var(--font-mono); font-size:13px; color:var(--red);">3% → 0%</td>
+            <td style="font-size:13px; color:var(--text-secondary);">Removes double-count with SMH. AVGO thesis intact via SMH. 3% capital freed for IAU + cash.</td>
+          </tr>
+          <tr>
+            <td><span class="badge" style="background:#3d2c05; color:#fbbf24; border:1px solid rgba(251,191,36,0.3);">Trim</span></td>
+            <td><span class="ticker-badge">VRT</span></td>
+            <td style="font-family:var(--font-mono); font-size:13px; color:var(--yellow);">6.5% → 4%</td>
+            <td style="font-size:13px; color:var(--text-secondary);">Brings single-stock below 5% cap. AI infrastructure thesis preserved. Reduces beta by ~0.06.</td>
+          </tr>
+          <tr>
+            <td><span class="badge" style="background:#0d3326; color:#34d399; border:1px solid rgba(52,211,153,0.25);">Add</span></td>
+            <td><span class="ticker-badge" style="background:rgba(245,158,11,0.15); color:#f59e0b;">IAU</span></td>
+            <td style="font-family:var(--font-mono); font-size:13px; color:var(--green);">0% → 5%</td>
+            <td style="font-size:13px; color:var(--text-secondary);">Closes the #1 scan finding: zero inflation protection. Gold has near-zero equity correlation. Best asset in stagflation. 0.25% ER.</td>
+          </tr>
+          <tr>
+            <td><span class="badge" style="background:#0d2545; color:#60a5fa; border:1px solid rgba(96,165,250,0.25);">Raise</span></td>
+            <td><span class="ticker-badge" style="background:var(--bg-card-alt); color:var(--text-muted);">Cash</span></td>
+            <td style="font-family:var(--font-mono); font-size:13px; color:var(--blue);">2.5% → 3%</td>
+            <td style="font-size:13px; color:var(--text-secondary);">Improves rebalancing capacity. In a –30% drawdown, 3% enables meaningful opportunistic buys.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ── Final Portfolio Snapshot ──────────────────────────── -->
+  <section class="report-section">
+    <div class="section-header">
+      <div class="section-number">03</div>
+      <div>
+        <h2 class="section-title">Final Portfolio Snapshot</h2>
+        <p class="section-sub">Optimized 8-position allocation</p>
+      </div>
+    </div>
+
+    <div class="card">
+      <div style="display:flex; flex-direction:column; gap:10px;">
+
+        <div class="alloc-bar-row">
+          <div class="alloc-bar-ticker">FZROX</div>
+          <div class="alloc-bar-track">
+            <div class="alloc-bar-fill alloc-bar-us-index" style="width:41%">
+              <span class="alloc-bar-inner-label">41%</span>
+            </div>
+          </div>
+          <div class="alloc-bar-role">Core US equity engine · 0.00% ER</div>
+        </div>
+
+        <div class="alloc-bar-row">
+          <div class="alloc-bar-ticker">XLV</div>
+          <div class="alloc-bar-track">
+            <div class="alloc-bar-fill alloc-bar-sector" style="width:13%">
+              <span class="alloc-bar-inner-label">13%</span>
+            </div>
+          </div>
+          <div class="alloc-bar-role">Defensive diversifier · Healthcare</div>
+        </div>
+
+        <div class="alloc-bar-row">
+          <div class="alloc-bar-ticker">SMH</div>
+          <div class="alloc-bar-track">
+            <div class="alloc-bar-fill alloc-bar-sector" style="width:12%; background:#a78bfa;">
+              <span class="alloc-bar-inner-label">12%</span>
+            </div>
+          </div>
+          <div class="alloc-bar-role">Semiconductor / AI growth tilt</div>
+        </div>
+
+        <div class="alloc-bar-row">
+          <div class="alloc-bar-ticker">SCHD</div>
+          <div class="alloc-bar-track">
+            <div class="alloc-bar-fill alloc-bar-dividend" style="width:12%">
+              <span class="alloc-bar-inner-label">12%</span>
+            </div>
+          </div>
+          <div class="alloc-bar-role">Value / income factor · Low beta</div>
+        </div>
+
+        <div class="alloc-bar-row">
+          <div class="alloc-bar-ticker">VXUS</div>
+          <div class="alloc-bar-track">
+            <div class="alloc-bar-fill alloc-bar-intl" style="width:10%">
+              <span class="alloc-bar-inner-label">10%</span>
+            </div>
+          </div>
+          <div class="alloc-bar-role">International diversifier</div>
+        </div>
+
+        <div class="alloc-bar-row" style="background:rgba(245,158,11,0.04); border-radius:var(--radius-sm); padding:4px 0;">
+          <div class="alloc-bar-ticker" style="color:#f59e0b;">IAU ✦</div>
+          <div class="alloc-bar-track">
+            <div class="alloc-bar-fill" style="width:5%; background:#f59e0b;">
+              <span class="alloc-bar-inner-label">5%</span>
+            </div>
+          </div>
+          <div class="alloc-bar-role" style="color:#f59e0b;">NEW · Real asset / inflation hedge</div>
+        </div>
+
+        <div class="alloc-bar-row">
+          <div class="alloc-bar-ticker">VRT</div>
+          <div class="alloc-bar-track">
+            <div class="alloc-bar-fill alloc-bar-single" style="width:4%">
+              <span class="alloc-bar-inner-label">4%</span>
+            </div>
+          </div>
+          <div class="alloc-bar-role">AI data center satellite · Trimmed</div>
+        </div>
+
+        <div class="alloc-bar-row">
+          <div class="alloc-bar-ticker" style="color:var(--text-muted);">Cash</div>
+          <div class="alloc-bar-track">
+            <div class="alloc-bar-fill alloc-bar-cash" style="width:3%">
+              <span class="alloc-bar-inner-label">3%</span>
+            </div>
+          </div>
+          <div class="alloc-bar-role">Rebalance buffer / dry powder</div>
+        </div>
+
+      </div>
+      <p style="font-size:11px; color:var(--text-muted); margin-top:16px;">✦ New addition from /optimize pass</p>
+    </div>
+  </section>
+
+  <!-- ── What to Watch ──────────────────────────────────────── -->
+  <section class="report-section">
+    <div class="section-header">
+      <div class="section-number">04</div>
+      <div>
+        <h2 class="section-title">What to Watch Going Forward</h2>
+        <p class="section-sub">Four live risk monitors to track after implementing changes</p>
+      </div>
+    </div>
+
+    <div class="watch-grid">
+      <div class="watch-item">
+        <div class="watch-num">1</div>
+        <div>
+          <div class="watch-title">Semiconductor cycle</div>
+          <div class="watch-body">SMH + FZROX tech sleeve = ~32% effective semi exposure after optimization. An AI capex slowdown or NVIDIA earnings shock triggers simultaneous drawdowns across multiple positions. Monitor SMH relative strength monthly.</div>
+        </div>
+      </div>
+      <div class="watch-item">
+        <div class="watch-num">2</div>
+        <div>
+          <div class="watch-title">VRT single-stock quarterly check</div>
+          <div class="watch-body">At 4%, VRT is within limits but still the highest-idiosyncratic-risk position. Review earnings quarterly. If VRT rallies back to 7%+ of portfolio via price appreciation, trim again to maintain the 5% cap.</div>
+        </div>
+      </div>
+      <div class="watch-item">
+        <div class="watch-num">3</div>
+        <div>
+          <div class="watch-title">IAU rebalancing band</div>
+          <div class="watch-body">Gold can be volatile (±20% years). Set a rebalancing band of 3%–7%. If IAU drifts above 7% (gold surge), trim and redeploy into lagging equity. If it drops below 3%, add back to maintain inflation protection.</div>
+        </div>
+      </div>
+      <div class="watch-item">
+        <div class="watch-num">4</div>
+        <div>
+          <div class="watch-title">VXUS / USD relationship</div>
+          <div class="watch-body">If the dollar continues to weaken in 2026, VXUS and IAU both benefit — consider whether a small VXUS increase (to 12–13%) becomes warranted to capture the full international tailwind.</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── Final Grade ────────────────────────────────────────── -->
+  <section class="report-section" style="margin-bottom: 0;">
+    <div class="section-header">
+      <div class="section-number">05</div>
+      <div>
+        <h2 class="section-title">Overall Assessment</h2>
+        <p class="section-sub">Final optimized grade and five-dimension breakdown</p>
+      </div>
+    </div>
+
+    <div class="grade-hero" style="margin-bottom:24px;">
+      <div class="grade-hero-letter">B+</div>
+      <div class="grade-hero-content">
+        <h2>Optimized: Growth-Focused, Now Structurally Sound</h2>
+        <p>
+          A well-constructed Roth IRA centered on a zero-cost total market core. High growth potential from deliberate tech/semi tilt with 
+          genuine defensive layers (XLV, SCHD). Critical inflation blind spot now closed via IAU. Single-stock risk capped. 
+          Double-counted AVGO bet cleaned up. Remaining opportunity: consider whether the VXUS underweight (10% vs 40% global cap) 
+          warrants a future rebalance if non-US valuations continue to diverge from US. 
+          No urgent actions remain post-optimization.
+        </p>
+        <div class="grade-dims">
+          <span class="grade-dim-pill" style="background:#0d3326; color:#34d399; border-color:rgba(52,211,153,0.25);">Diversification B–</span>
+          <span class="grade-dim-pill" style="background:#0d2545; color:#60a5fa; border-color:rgba(96,165,250,0.25);">Growth Potential A</span>
+          <span class="grade-dim-pill" style="background:#3d2c05; color:#fbbf24; border-color:rgba(251,191,36,0.3);">Risk Mgmt B–</span>
+          <span class="grade-dim-pill" style="background:#0d3326; color:#34d399; border-color:rgba(52,211,153,0.25);">Cost Efficiency A</span>
+          <span class="grade-dim-pill" style="background:#0d2545; color:#60a5fa; border-color:rgba(96,165,250,0.25);">Structure B+</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="card" style="border-color:rgba(108,138,255,0.2);">
+      <p style="font-size:13px; color:var(--text-secondary); line-height:1.75; margin:0;">
+        <strong style="color:var(--text-primary);">Next steps if desired:</strong> Run <span style="font-family:var(--font-mono); color:var(--accent);">/optimize</span> with stricter diversification constraints (e.g., target B+ on diversification dimension) 
+        to explore whether a VXUS increase or a small SCHD trim improves the international exposure gap. 
+        The current portfolio requires no immediate action — the critical issues are resolved.
+      </p>
+    </div>
+  </section>
+
+  <!-- ── Footer ────────────────────────────────────────────── -->
+  <footer class="page-footer">
+    <div class="footer-text">Portfolio Intelligence · Roth IRA Executive Summary · Feb 21, 2026</div>
+    <div class="footer-disclaimer">For informational purposes only. Not financial advice. All projections, correlations and grade assessments are modeled approximations based on historical data and are not guarantees of future performance.</div>
+  </footer>
+
+</div><!-- /page-wrapper -->
+
+<script>
+  function exportPDF() {
+    window.print();
+  }
+</script>
+</body>
+</html>
