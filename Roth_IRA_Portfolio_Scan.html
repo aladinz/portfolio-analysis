@@ -1,0 +1,798 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Roth IRA — /scan</title>
+  <link rel="stylesheet" href="portfolio.css" />
+  <style>
+    /* ── Scan-specific accent: diagnostic red/amber ── */
+    :root {
+      --scan-accent: #f87171;
+      --scan-accent-dim: #3b1010;
+      --scan-accent-glow: rgba(248,113,113,0.10);
+    }
+    .cmd-chip { background: var(--scan-accent-dim); color: var(--scan-accent); border-color: rgba(248,113,113,0.25); }
+
+    /* ── Finding severity badges ── */
+    .sev-critical { background: #3b1010; color: #f87171; border: 1px solid rgba(248,113,113,0.3); }
+    .sev-warn     { background: #3d2c05; color: #fbbf24; border: 1px solid rgba(251,191,36,0.3); }
+    .sev-info     { background: #0d2545; color: #60a5fa; border: 1px solid rgba(96,165,250,0.25); }
+    .sev-pass     { background: #0d3326; color: #34d399; border: 1px solid rgba(52,211,153,0.25); }
+
+    .finding-row {
+      display: grid;
+      grid-template-columns: 100px 1fr;
+      gap: 14px;
+      align-items: start;
+      padding: 14px 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .finding-row:last-child { border-bottom: none; }
+    .finding-title { font-weight: 600; font-size: 14px; margin-bottom: 3px; color: var(--text-primary); }
+    .finding-body  { font-size: 13px; color: var(--text-secondary); line-height: 1.6; }
+
+    /* ── Overlap matrix ── */
+    .overlap-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    .overlap-table th {
+      text-align: left; padding: 10px 12px;
+      background: var(--bg-card-alt); color: var(--text-secondary);
+      font-weight: 500; font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em;
+      border-bottom: 1px solid var(--border);
+    }
+    .overlap-table td {
+      padding: 11px 12px; border-bottom: 1px solid var(--border);
+      vertical-align: middle;
+    }
+    .overlap-table tr:last-child td { border-bottom: none; }
+    .overlap-table tr:hover td { background: var(--bg-hover); }
+
+    .corr-pill {
+      display: inline-block; padding: 2px 9px; border-radius: 20px;
+      font-family: var(--font-mono); font-size: 12px; font-weight: 600;
+    }
+    .corr-high   { background: #3b1010; color: #f87171; }
+    .corr-med    { background: #3d2c05; color: #fbbf24; }
+    .corr-low    { background: #0d3326; color: #34d399; }
+
+    /* ── Stress test table ── */
+    .stress-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    .stress-table th {
+      text-align: left; padding: 10px 12px;
+      background: var(--bg-card-alt); color: var(--text-secondary);
+      font-weight: 500; font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em;
+      border-bottom: 1px solid var(--border);
+    }
+    .stress-table td { padding: 11px 12px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+    .stress-table tr:last-child td { border-bottom: none; }
+    .stress-table tr:hover td { background: var(--bg-hover); }
+
+    .drawdown-bar {
+      display: flex; align-items: center; gap: 10px;
+    }
+    .drawdown-fill {
+      height: 8px; border-radius: 4px; background: var(--scan-accent);
+      min-width: 4px; transition: width 0.6s ease;
+    }
+    .drawdown-label { font-family: var(--font-mono); font-size: 12px; color: var(--red); font-weight: 600; }
+
+    /* ── Effective exposure bar ── */
+    .exp-row { 
+      display: flex; align-items: center; gap: 12px; margin-bottom: 10px;
+    }
+    .exp-label { width: 200px; font-size: 13px; color: var(--text-secondary); flex-shrink: 0; }
+    .exp-track { flex: 1; height: 10px; background: var(--border); border-radius: 5px; overflow: hidden; }
+    .exp-fill  { height: 100%; border-radius: 5px; }
+    .exp-pct   { width: 42px; text-align: right; font-family: var(--font-mono); font-size: 12px; font-weight: 600; color: var(--text-primary); }
+
+    .exp-tech    { background: #6c8aff; }
+    .exp-health  { background: #34d399; }
+    .exp-intl    { background: #60a5fa; }
+    .exp-divval  { background: #fbbf24; }
+    .exp-cash    { background: #555870; }
+    .exp-semi    { background: #a78bfa; }
+
+    /* ── Failure mode cards ── */
+    .failure-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    .failure-card {
+      background: var(--bg-card); border: 1px solid var(--border);
+      border-radius: var(--radius-md); padding: 18px;
+    }
+    .failure-header { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+    .failure-icon { width: 32px; height: 32px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 15px; }
+    .failure-icon.critical { background: var(--scan-accent-dim); }
+    .failure-icon.warn     { background: var(--yellow-dim); }
+    .failure-title { font-weight: 600; font-size: 14px; }
+    .failure-body  { font-size: 13px; color: var(--text-secondary); line-height: 1.6; }
+    .failure-impact { 
+      margin-top: 10px; padding: 8px 10px; border-radius: var(--radius-sm);
+      background: var(--bg-card-alt); font-family: var(--font-mono);
+      font-size: 12px; display: flex; justify-content: space-between; align-items: center;
+    }
+    .failure-impact-label { color: var(--text-muted); }
+    .failure-impact-val   { color: var(--red); font-weight: 700; }
+
+    /* ── Scorecard ── */
+    .scan-scorecard {
+      display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px;
+    }
+    .score-item {
+      background: var(--bg-card); border: 1px solid var(--border);
+      border-radius: var(--radius-md); padding: 16px; text-align: center;
+    }
+    .score-label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-muted); margin-bottom: 8px; }
+    .score-grade { font-size: 28px; font-weight: 800; line-height: 1; margin-bottom: 4px; }
+    .score-sub   { font-size: 11px; color: var(--text-secondary); }
+    .grade-a { color: #34d399; }
+    .grade-b { color: #60a5fa; }
+    .grade-c { color: #fbbf24; }
+    .grade-d { color: #f87171; }
+
+    .overall-grade-card {
+      background: linear-gradient(135deg, #1a1d27, #1e2130);
+      border: 1px solid var(--border); border-radius: var(--radius-lg);
+      padding: 32px; display: flex; align-items: center; gap: 32px;
+    }
+    .overall-grade-letter {
+      font-size: 80px; font-weight: 900; line-height: 1;
+      color: #fbbf24; text-shadow: 0 0 40px rgba(251,191,36,0.3);
+      flex-shrink: 0;
+    }
+    .overall-grade-detail h3 { font-size: 20px; font-weight: 700; margin-bottom: 8px; }
+    .overall-grade-detail p  { font-size: 14px; color: var(--text-secondary); line-height: 1.7; }
+
+    @media (max-width: 700px) {
+      .failure-grid { grid-template-columns: 1fr; }
+      .scan-scorecard { grid-template-columns: repeat(3, 1fr); }
+      .overall-grade-card { flex-direction: column; text-align: center; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ── Top Bar ─────────────────────────────────────────────── -->
+<nav class="top-bar">
+  <div class="top-bar-inner">
+    <div class="top-bar-brand">
+      <div class="brand-icon">R</div>
+      <span class="brand-name">Portfolio Intelligence</span>
+    </div>
+    <div class="top-bar-meta">
+      <span class="meta-chip">Roth IRA</span>
+      <span class="meta-chip">Feb 21, 2026</span>
+      <span class="meta-chip cmd-chip">/scan</span>
+    </div>
+  </div>
+</nav>
+
+<!-- ── Export Button ──────────────────────────────────────── -->
+<button class="pdf-export-btn" id="pdfBtn" onclick="exportPDF()">
+  <span class="btn-icon">↓</span>
+  <span class="btn-label">Export PDF</span>
+</button>
+
+<div class="page-wrapper">
+
+  <!-- ── Hero ─────────────────────────────────────────────── -->
+  <header class="report-hero">
+    <div class="hero-eyebrow">
+      <span class="badge badge-outline">Diagnostic Scan</span>
+      <span class="badge badge-outline">8 Positions</span>
+      <span class="badge badge-outline">100% Equity</span>
+    </div>
+    <h1 class="hero-title">Roth IRA — Full Diagnostic</h1>
+    <p class="hero-sub">Deep structural inspection: overlaps, correlations, stress tests, failure modes, and risk scoring across all holdings.</p>
+  </header>
+
+  <!-- ── Section 1: Holdings Snapshot ─────────────────────── -->
+  <section class="report-section">
+    <div class="section-header">
+      <div class="section-number">01</div>
+      <div>
+        <h2 class="section-title">Holdings Snapshot</h2>
+        <p class="section-sub">Declared allocations and asset classification</p>
+      </div>
+    </div>
+
+    <div class="card">
+      <table style="width:100%; border-collapse:collapse; font-size:13px;">
+        <thead>
+          <tr>
+            <th style="text-align:left; padding:10px 12px; background:var(--bg-card-alt); color:var(--text-secondary); font-size:11px; text-transform:uppercase; letter-spacing:0.06em; border-bottom:1px solid var(--border);">Ticker</th>
+            <th style="text-align:left; padding:10px 12px; background:var(--bg-card-alt); color:var(--text-secondary); font-size:11px; text-transform:uppercase; letter-spacing:0.06em; border-bottom:1px solid var(--border);">Name</th>
+            <th style="text-align:left; padding:10px 12px; background:var(--bg-card-alt); color:var(--text-secondary); font-size:11px; text-transform:uppercase; letter-spacing:0.06em; border-bottom:1px solid var(--border);">Type</th>
+            <th style="text-align:left; padding:10px 12px; background:var(--bg-card-alt); color:var(--text-secondary); font-size:11px; text-transform:uppercase; letter-spacing:0.06em; border-bottom:1px solid var(--border);">Alloc</th>
+            <th style="text-align:left; padding:10px 12px; background:var(--bg-card-alt); color:var(--text-secondary); font-size:11px; text-transform:uppercase; letter-spacing:0.06em; border-bottom:1px solid var(--border);">Role</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td style="padding:11px 12px; border-bottom:1px solid var(--border);"><span class="ticker-badge">FZROX</span></td>
+            <td style="padding:11px 12px; border-bottom:1px solid var(--border); color:var(--text-secondary);">Fidelity ZERO Total Market Index</td>
+            <td style="padding:11px 12px; border-bottom:1px solid var(--border);"><span class="badge badge-outline">US Broad Index</span></td>
+            <td style="padding:11px 12px; border-bottom:1px solid var(--border);"><span style="font-family:var(--font-mono); font-weight:700; color:var(--accent);">41%</span></td>
+            <td style="padding:11px 12px; border-bottom:1px solid var(--border); color:var(--text-secondary); font-size:12px;">Core US equity engine</td>
+          </tr>
+          <tr>
+            <td style="padding:11px 12px; border-bottom:1px solid var(--border);"><span class="ticker-badge">XLV</span></td>
+            <td style="padding:11px 12px; border-bottom:1px solid var(--border); color:var(--text-secondary);">Health Care Select Sector SPDR</td>
+            <td style="padding:11px 12px; border-bottom:1px solid var(--border);"><span class="badge badge-outline">Sector ETF</span></td>
+            <td style="padding:11px 12px; border-bottom:1px solid var(--border);"><span style="font-family:var(--font-mono); font-weight:700; color:var(--accent);">13%</span></td>
+            <td style="padding:11px 12px; border-bottom:1px solid var(--border); color:var(--text-secondary); font-size:12px;">Defensive tilt / sector overweight</td>
+          </tr>
+          <tr>
+            <td style="padding:11px 12px; border-bottom:1px solid var(--border);"><span class="ticker-badge">SMH</span></td>
+            <td style="padding:11px 12px; border-bottom:1px solid var(--border); color:var(--text-secondary);">VanEck Semiconductor ETF</td>
+            <td style="padding:11px 12px; border-bottom:1px solid var(--border);"><span class="badge badge-outline">Sector ETF</span></td>
+            <td style="padding:11px 12px; border-bottom:1px solid var(--border);"><span style="font-family:var(--font-mono); font-weight:700; color:var(--accent);">12%</span></td>
+            <td style="padding:11px 12px; border-bottom:1px solid var(--border); color:var(--text-secondary); font-size:12px;">High-growth cyclical tilt</td>
+          </tr>
+          <tr>
+            <td style="padding:11px 12px; border-bottom:1px solid var(--border);"><span class="ticker-badge">SCHD</span></td>
+            <td style="padding:11px 12px; border-bottom:1px solid var(--border); color:var(--text-secondary);">Schwab US Dividend Equity ETF</td>
+            <td style="padding:11px 12px; border-bottom:1px solid var(--border);"><span class="badge badge-outline">Factor ETF</span></td>
+            <td style="padding:11px 12px; border-bottom:1px solid var(--border);"><span style="font-family:var(--font-mono); font-weight:700; color:var(--accent);">12%</span></td>
+            <td style="padding:11px 12px; border-bottom:1px solid var(--border); color:var(--text-secondary); font-size:12px;">Income / value counterweight</td>
+          </tr>
+          <tr>
+            <td style="padding:11px 12px; border-bottom:1px solid var(--border);"><span class="ticker-badge">VXUS</span></td>
+            <td style="padding:11px 12px; border-bottom:1px solid var(--border); color:var(--text-secondary);">Vanguard Total International Stock</td>
+            <td style="padding:11px 12px; border-bottom:1px solid var(--border);"><span class="badge badge-outline">Intl Index</span></td>
+            <td style="padding:11px 12px; border-bottom:1px solid var(--border);"><span style="font-family:var(--font-mono); font-weight:700; color:var(--accent);">10%</span></td>
+            <td style="padding:11px 12px; border-bottom:1px solid var(--border); color:var(--text-secondary); font-size:12px;">Geographic diversifier</td>
+          </tr>
+          <tr>
+            <td style="padding:11px 12px; border-bottom:1px solid var(--border);"><span class="ticker-badge">VRT</span></td>
+            <td style="padding:11px 12px; border-bottom:1px solid var(--border); color:var(--text-secondary);">Vertiv Holdings</td>
+            <td style="padding:11px 12px; border-bottom:1px solid var(--border);"><span class="badge badge-outline">Single Stock</span></td>
+            <td style="padding:11px 12px; border-bottom:1px solid var(--border);"><span style="font-family:var(--font-mono); font-weight:700; color:var(--accent);">6.5%</span></td>
+            <td style="padding:11px 12px; border-bottom:1px solid var(--border); color:var(--text-secondary); font-size:12px;">AI / data center infrastructure bet</td>
+          </tr>
+          <tr>
+            <td style="padding:11px 12px; border-bottom:1px solid var(--border);"><span class="ticker-badge">AVGO</span></td>
+            <td style="padding:11px 12px; border-bottom:1px solid var(--border); color:var(--text-secondary);">Broadcom Inc.</td>
+            <td style="padding:11px 12px; border-bottom:1px solid var(--border);"><span class="badge badge-outline">Single Stock</span></td>
+            <td style="padding:11px 12px; border-bottom:1px solid var(--border);"><span style="font-family:var(--font-mono); font-weight:700; color:var(--accent);">3%</span></td>
+            <td style="padding:11px 12px; border-bottom:1px solid var(--border); color:var(--text-secondary); font-size:12px;">Semiconductor / AI networking tilt</td>
+          </tr>
+          <tr>
+            <td style="padding:11px 12px;"><span class="ticker-badge" style="background:var(--bg-card-alt);">CASH</span></td>
+            <td style="padding:11px 12px; color:var(--text-secondary);">Cash / MM equivalent</td>
+            <td style="padding:11px 12px;"><span class="badge badge-outline">Liquidity</span></td>
+            <td style="padding:11px 12px;"><span style="font-family:var(--font-mono); font-weight:700; color:var(--text-secondary);">2.5%</span></td>
+            <td style="padding:11px 12px; color:var(--text-secondary); font-size:12px;">Dry powder / rebalance buffer</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ── Section 2: Effective Exposure ─────────────────────── -->
+  <section class="report-section">
+    <div class="section-header">
+      <div class="section-number">02</div>
+      <div>
+        <h2 class="section-title">Effective Exposure</h2>
+        <p class="section-sub">True risk allocation after look-through — surface weights understate tech concentration</p>
+      </div>
+    </div>
+
+    <div class="card">
+      <p style="font-size:13px; color:var(--text-secondary); margin-bottom:20px; line-height:1.6;">
+        FZROX holds ~28% technology by index weight. After look-through, semiconductors (AVGO inside SMH, NVDA/AMD in FZROX), data center (VRT), 
+        and broad tech (FZROX tech sleeve) combine to make technology/semis the single largest effective risk bloc at <strong style="color:var(--red)">~35%</strong> — nearly invisible at the surface level.
+      </p>
+
+      <div class="exp-row">
+        <div class="exp-label">Technology (effective)</div>
+        <div class="exp-track"><div class="exp-fill exp-tech" style="width:35%"></div></div>
+        <div class="exp-pct" style="color:#f87171;">~35%</div>
+      </div>
+      <div class="exp-row">
+        <div class="exp-label">Semis (explicit)</div>
+        <div class="exp-track"><div class="exp-fill exp-semi" style="width:15%"></div></div>
+        <div class="exp-pct" style="color:#a78bfa;">15%</div>
+      </div>
+      <div class="exp-row">
+        <div class="exp-label">Healthcare</div>
+        <div class="exp-track"><div class="exp-fill exp-health" style="width:13%"></div></div>
+        <div class="exp-pct" style="color:#34d399;">13%</div>
+      </div>
+      <div class="exp-row">
+        <div class="exp-label">Dividend / Value (SCHD)</div>
+        <div class="exp-track"><div class="exp-fill exp-divval" style="width:12%"></div></div>
+        <div class="exp-pct" style="color:#fbbf24;">12%</div>
+      </div>
+      <div class="exp-row">
+        <div class="exp-label">International</div>
+        <div class="exp-track"><div class="exp-fill exp-intl" style="width:10%"></div></div>
+        <div class="exp-pct" style="color:#60a5fa;">10%</div>
+      </div>
+      <div class="exp-row">
+        <div class="exp-label">Remaining US Broad</div>
+        <div class="exp-track"><div class="exp-fill" style="width:27%; background:#343752;"></div></div>
+        <div class="exp-pct" style="color:var(--text-secondary);">~27%</div>
+      </div>
+      <div class="exp-row">
+        <div class="exp-label">Cash</div>
+        <div class="exp-track"><div class="exp-fill exp-cash" style="width:2.5%"></div></div>
+        <div class="exp-pct" style="color:var(--text-muted);">2.5%</div>
+      </div>
+
+      <div style="margin-top:20px; padding:14px; background:var(--scan-accent-dim); border:1px solid rgba(248,113,113,0.25); border-radius:var(--radius-sm);">
+        <p style="font-size:13px; color:var(--red-text); line-height:1.6;">
+          ⚠ <strong>Hidden concentration:</strong> Declared tech allocation ~21.5% (SMH + VRT + AVGO). After FZROX look-through (~28% tech weight × 41%), 
+          effective tech exposure rises to <strong>~35%</strong>. A semiconductor-specific bear market hits this portfolio from three separate positions simultaneously.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── Section 3: Overlap & Correlation ──────────────────── -->
+  <section class="report-section">
+    <div class="section-header">
+      <div class="section-number">03</div>
+      <div>
+        <h2 class="section-title">Overlap & Correlation Matrix</h2>
+        <p class="section-sub">Pairwise redundancies and hidden double-counting</p>
+      </div>
+    </div>
+
+    <div class="card">
+      <table class="overlap-table">
+        <thead>
+          <tr>
+            <th>Pair</th>
+            <th>Corr (approx)</th>
+            <th>Overlap Type</th>
+            <th>Diagnosis</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><span class="ticker-badge">AVGO</span> inside <span class="ticker-badge">SMH</span></td>
+            <td><span class="corr-pill corr-high">0.91</span></td>
+            <td style="color:var(--text-secondary); font-size:12px;">Direct constituent overlap</td>
+            <td style="font-size:12px; color:var(--red-text);">AVGO is top-5 holding in SMH (~8% weight). Holding both magnifies the single-name bet.</td>
+          </tr>
+          <tr>
+            <td><span class="ticker-badge">FZROX</span> vs <span class="ticker-badge">SCHD</span></td>
+            <td><span class="corr-pill corr-high">0.88</span></td>
+            <td style="color:var(--text-secondary); font-size:12px;">Factor overlap (dividend names)</td>
+            <td style="font-size:12px; color:var(--yellow-text);">SCHD's holdings (JNJ, PFI, KO, etc.) are all in FZROX. Partial redundancy; SCHD adds value/income tilt but not independence.</td>
+          </tr>
+          <tr>
+            <td><span class="ticker-badge">FZROX</span> vs <span class="ticker-badge">SMH</span></td>
+            <td><span class="corr-pill corr-high">0.82</span></td>
+            <td style="color:var(--text-secondary); font-size:12px;">Semi names in index</td>
+            <td style="font-size:12px; color:var(--yellow-text);">NVDA, AMD, QCOM etc. in FZROX already. SMH then concentrates those names at 12% weight.</td>
+          </tr>
+          <tr>
+            <td><span class="ticker-badge">VRT</span> vs <span class="ticker-badge">SMH</span></td>
+            <td><span class="corr-pill corr-med">0.78</span></td>
+            <td style="color:var(--text-secondary); font-size:12px;">AI-theme co-movement</td>
+            <td style="font-size:12px; color:var(--yellow-text);">Both driven by AI capex cycle. Sell-off in AI narrative hits both simultaneously.</td>
+          </tr>
+          <tr>
+            <td><span class="ticker-badge">FZROX</span> vs <span class="ticker-badge">VRT</span></td>
+            <td><span class="corr-pill corr-med">0.76</span></td>
+            <td style="color:var(--text-secondary); font-size:12px;">Large-cap growth co-movement</td>
+            <td style="font-size:12px; color:var(--yellow-text);">VRT behaves like a high-beta tech/growth name; broadly correlated with FZROX.</td>
+          </tr>
+          <tr>
+            <td><span class="ticker-badge">XLV</span> vs <span class="ticker-badge">FZROX</span></td>
+            <td><span class="corr-pill corr-med">0.72</span></td>
+            <td style="color:var(--text-secondary); font-size:12px;">Sector inside index</td>
+            <td style="font-size:12px; color:var(--text-secondary);">Healthcare ~12% of FZROX already. XLV overweights it — intentional defensive tilt, moderate overlap.</td>
+          </tr>
+          <tr>
+            <td><span class="ticker-badge">FZROX</span> vs <span class="ticker-badge">VXUS</span></td>
+            <td><span class="corr-pill corr-med">0.74</span></td>
+            <td style="color:var(--text-secondary); font-size:12px;">Global equity co-movement</td>
+            <td style="font-size:12px; color:var(--text-secondary);">Expected. Risk-off periods sell both. Correlation rises in crises — diversification weakens exactly when needed most.</td>
+          </tr>
+          <tr>
+            <td><span class="ticker-badge">SCHD</span> vs <span class="ticker-badge">XLV</span></td>
+            <td><span class="corr-pill corr-low">0.55</span></td>
+            <td style="color:var(--text-secondary); font-size:12px;">Limited direct overlap</td>
+            <td style="font-size:12px; color:var(--green-text);">Both are defensive tilts but with different factor drivers. Acceptable.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ── Section 4: Failure Modes ──────────────────────────── -->
+  <section class="report-section">
+    <div class="section-header">
+      <div class="section-number">04</div>
+      <div>
+        <h2 class="section-title">Failure Mode Analysis</h2>
+        <p class="section-sub">Scenarios that stress this specific portfolio's structural weak points</p>
+      </div>
+    </div>
+
+    <div class="failure-grid">
+
+      <div class="failure-card" style="border-color: rgba(248,113,113,0.3);">
+        <div class="failure-header">
+          <div class="failure-icon critical">💥</div>
+          <div>
+            <div class="failure-title">Semiconductor Bear Market</div>
+            <span class="badge sev-critical" style="font-size:11px;">Critical</span>
+          </div>
+        </div>
+        <div class="failure-body">SMH –60%, AVGO –55%, plus FZROX loses ~15–20% from its semi holdings. Three separate positions hit simultaneously. 
+        No other holding offsets — XLV and SCHD partially cushion but can't absorb the blow.</div>
+        <div class="failure-impact">
+          <span class="failure-impact-label">Est. portfolio drawdown</span>
+          <span class="failure-impact-val">–35 to –45%</span>
+        </div>
+      </div>
+
+      <div class="failure-card" style="border-color: rgba(248,113,113,0.3);">
+        <div class="failure-header">
+          <div class="failure-icon critical">🌐</div>
+          <div>
+            <div class="failure-title">AI / Data Center Bubble Burst</div>
+            <span class="badge sev-critical" style="font-size:11px;">Critical</span>
+          </div>
+        </div>
+        <div class="failure-body">VRT –70%, SMH –50%, AVGO –45%, FZROX tech sleeve –30%. All AI-correlated names de-rate together as capex narrative reverses. 
+        VRT especially vulnerable as a pure-play single stock riding AI infrastructure hype.</div>
+        <div class="failure-impact">
+          <span class="failure-impact-label">Est. portfolio drawdown</span>
+          <span class="failure-impact-val">–40 to –55%</span>
+        </div>
+      </div>
+
+      <div class="failure-card" style="border-color: rgba(251,191,36,0.3);">
+        <div class="failure-header">
+          <div class="failure-icon warn">📈</div>
+          <div>
+            <div class="failure-title">Sustained Rate Shock (2022 Replay)</div>
+            <span class="badge sev-warn" style="font-size:11px;">High Risk</span>
+          </div>
+        </div>
+        <div class="failure-body">Portfolio is 97.5% equity with zero duration management. In 2022, this growth-heavy allocation lost ~35–40%. No bonds, no TIPS, no real assets to rotate into. 
+        Cash at 2.5% provides no meaningful cushion.</div>
+        <div class="failure-impact">
+          <span class="failure-impact-label">Est. portfolio drawdown</span>
+          <span class="failure-impact-val">–30 to –40%</span>
+        </div>
+      </div>
+
+      <div class="failure-card" style="border-color: rgba(251,191,36,0.3);">
+        <div class="failure-header">
+          <div class="failure-icon warn">🔥</div>
+          <div>
+            <div class="failure-title">Stagflation (High CPI + Slow Growth)</div>
+            <span class="badge sev-warn" style="font-size:11px;">High Risk</span>
+          </div>
+        </div>
+        <div class="failure-body">Zero inflation protection — no commodities, no TIPS, no real assets. Growth stocks (bulk of FZROX, SMH, VRT) 
+        reprice sharply as real discount rates rise and earnings expectations compress. SCHD and XLV partially hold up.</div>
+        <div class="failure-impact">
+          <span class="failure-impact-label">Est. portfolio drawdown</span>
+          <span class="failure-impact-val">–25 to –35%</span>
+        </div>
+      </div>
+
+      <div class="failure-card" style="border-color: rgba(96,165,250,0.25);">
+        <div class="failure-header">
+          <div class="failure-icon" style="background:var(--blue-dim);">💵</div>
+          <div>
+            <div class="failure-title">USD Strength Regime</div>
+            <span class="badge sev-info" style="font-size:11px;">Moderate</span>
+          </div>
+        </div>
+        <div class="failure-body">VXUS at 10% loses currency translation value in a strong dollar cycle. Impact is relative — underperformance vs US rather than absolute losses. 
+        10% weight limits total portfolio damage.</div>
+        <div class="failure-impact">
+          <span class="failure-impact-label">Est. relative drag</span>
+          <span class="failure-impact-val">–2 to –4%</span>
+        </div>
+      </div>
+
+      <div class="failure-card" style="border-color: rgba(52,211,153,0.2);">
+        <div class="failure-header">
+          <div class="failure-icon" style="background:var(--green-dim);">🏥</div>
+          <div>
+            <div class="failure-title">Healthcare Regulatory Risk</div>
+            <span class="badge sev-pass" style="font-size:11px;">Contained</span>
+          </div>
+        </div>
+        <div class="failure-body">Drug pricing reform or FDA policy shifts could pressure XLV. At 13%, the impact is capped. 
+        XLV is diversified across 60+ names so single-stock FDA risk is muted. This is a manageable sector-level risk.</div>
+        <div class="failure-impact">
+          <span class="failure-impact-label">Est. portfolio drawdown</span>
+          <span class="failure-impact-val">–3 to –7%</span>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ── Section 5: Stress Tests ───────────────────────────── -->
+  <section class="report-section">
+    <div class="section-header">
+      <div class="section-number">05</div>
+      <div>
+        <h2 class="section-title">Historical Stress Tests</h2>
+        <p class="section-sup">Modeled drawdowns across five major market regimes</p>
+      </div>
+    </div>
+
+    <div class="card">
+      <table class="stress-table">
+        <thead>
+          <tr>
+            <th>Regime</th>
+            <th>Period</th>
+            <th>Est. Drawdown</th>
+            <th>Primary Driver</th>
+            <th>Partial Shelter</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td style="font-weight:600; font-size:14px;">Dot-Com Bust</td>
+            <td style="color:var(--text-secondary); font-size:12px;">2000–2002</td>
+            <td>
+              <div class="drawdown-bar">
+                <div class="drawdown-fill" style="width: 60%;"></div>
+                <span class="drawdown-label">–55 to –65%</span>
+              </div>
+            </td>
+            <td style="font-size:12px; color:var(--text-secondary);">SMH analog –80%, FZROX analog –40%. AVGO/VRT analogs near zero.</td>
+            <td style="font-size:12px; color:var(--green-text);">SCHD, XLV (defensive), cash</td>
+          </tr>
+          <tr>
+            <td style="font-weight:600; font-size:14px;">GFC</td>
+            <td style="color:var(--text-secondary); font-size:12px;">2008–2009</td>
+            <td>
+              <div class="drawdown-bar">
+                <div class="drawdown-fill" style="width: 50%;"></div>
+                <span class="drawdown-label">–45 to –52%</span>
+              </div>
+            </td>
+            <td style="font-size:12px; color:var(--text-secondary);">Systemic deleveraging hits all equity. SCHD, XLV partially cushion; semis hit hard.</td>
+            <td style="font-size:12px; color:var(--green-text);">XLV (–37% vs market –55%), SCHD analogs</td>
+          </tr>
+          <tr>
+            <td style="font-weight:600; font-size:14px;">COVID Crash</td>
+            <td style="color:var(--text-secondary); font-size:12px;">Feb–Mar 2020</td>
+            <td>
+              <div class="drawdown-bar">
+                <div class="drawdown-fill" style="width: 30%;"></div>
+                <span class="drawdown-label">–28 to –34%</span>
+              </div>
+            </td>
+            <td style="font-size:12px; color:var(--text-secondary);">Broad equity panic, quick recovery. Tech/semis led the rebound — portfolio recovered strongly after trough.</td>
+            <td style="font-size:12px; color:var(--green-text);">XLV (healthcare demand spike), SCHD</td>
+          </tr>
+          <tr>
+            <td style="font-weight:600; font-size:14px;">2022 Rate Shock</td>
+            <td style="color:var(--text-secondary); font-size:12px;">Jan–Oct 2022</td>
+            <td>
+              <div class="drawdown-bar">
+                <div class="drawdown-fill" style="width: 38%;"></div>
+                <span class="drawdown-label">–35 to –42%</span>
+              </div>
+            </td>
+            <td style="font-size:12px; color:var(--text-secondary);">Growth/tech repricing as rates rose. SMH –45%, FZROX –22%, VRT –70% in 2022. Maximum pain scenario for this allocation.</td>
+            <td style="font-size:12px; color:var(--green-text);">SCHD +4% in 2022, XLV –3% (far better than market)</td>
+          </tr>
+          <tr>
+            <td style="font-weight:600; font-size:14px;">Soft Landing Bull</td>
+            <td style="color:var(--text-secondary); font-size:12px;">2023–2025</td>
+            <td>
+              <div class="drawdown-bar">
+                <div class="drawdown-fill" style="width: 0%; background:var(--green);"></div>
+                <span class="drawdown-label" style="color:var(--green);">+68 to +90%</span>
+              </div>
+            </td>
+            <td style="font-size:12px; color:var(--text-secondary);">AI capex boom. SMH +150%+, VRT +300%+, AVGO +200%+. This portfolio's setup was nearly perfect for this regime.</td>
+            <td style="font-size:12px; color:var(--green-text);">All positions except VXUS (lagged US)</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ── Section 6: Key Findings ───────────────────────────── -->
+  <section class="report-section">
+    <div class="section-header">
+      <div class="section-number">06</div>
+      <div>
+        <h2 class="section-title">Key Findings</h2>
+        <p class="section-sub">Ranked diagnostic flags from critical to passing</p>
+      </div>
+    </div>
+
+    <div class="card">
+
+      <div class="finding-row">
+        <div><span class="badge sev-critical">Critical</span></div>
+        <div>
+          <div class="finding-title">Zero inflation / real-asset protection</div>
+          <div class="finding-body">100% equity, no TIPS, no commodities, no real assets. In a stagflationary regime — the one environment where both growth stocks and bonds fail together — this portfolio has no defensive anchor. 
+          Gold, commodity ETFs, or TIPS would serve as structural insurance.</div>
+        </div>
+      </div>
+
+      <div class="finding-row">
+        <div><span class="badge sev-critical">Critical</span></div>
+        <div>
+          <div class="finding-title">Hidden semiconductor concentration ~35% effective</div>
+          <div class="finding-body">Surface allocation: SMH 12% + AVGO 3% = 15%. After FZROX look-through (tech ~28% of index × 41%), effective tech/semi exposure reaches ~35%. 
+          AVGO is simultaneously a direct holding AND a top-5 SMH constituent — a double-counted bet.</div>
+        </div>
+      </div>
+
+      <div class="finding-row">
+        <div><span class="badge sev-warn">Warning</span></div>
+        <div>
+          <div class="finding-title">VRT — single-stock idiosyncratic risk at 6.5%</div>
+          <div class="finding-body">Vertiv is a high-conviction AI data center play but carries extreme single-stock risk. VRT fell –70% in 2022. 
+          At 6.5% of the Roth IRA, a –70% VRT move causes a –4.5% portfolio hit from this position alone. 
+          Position size is justified only if conviction is very high and time horizon is long (5+ years).</div>
+        </div>
+      </div>
+
+      <div class="finding-row">
+        <div><span class="badge sev-warn">Warning</span></div>
+        <div>
+          <div class="finding-title">Cash at 2.5% — thin rebalancing buffer</div>
+          <div class="finding-body">In a sharp drawdown (–30%), 2.5% cash allows minimal tactical buying. Roth IRA contributions are capped annually, so dry powder is precious. 
+          Consider keeping 4–5% cash to deploy meaningfully during corrections.</div>
+        </div>
+      </div>
+
+      <div class="finding-row">
+        <div><span class="badge sev-warn">Warning</span></div>
+        <div>
+          <div class="finding-title">SCHD / FZROX redundancy (0.88 correlation)</div>
+          <div class="finding-body">SCHD's dividend holdings (KO, PEP, JNJ, PFE, CVX) are all inside FZROX. SCHD contributes a useful value/income tilt and lower beta, but at 0.88 correlation it is not a true diversifier. 
+          Its primary value is the factor tilt, not independence.</div>
+        </div>
+      </div>
+
+      <div class="finding-row">
+        <div><span class="badge sev-info">Info</span></div>
+        <div>
+          <div class="finding-title">International underweight (10% VXUS)</div>
+          <div class="finding-body">Global market cap weight for ex-US equities is ~40%. At 10%, this portfolio is significantly US-centric. 
+          This is a deliberate tilt — not necessarily wrong — but means no structural benefit from dollar weakness or non-US growth cycles.</div>
+        </div>
+      </div>
+
+      <div class="finding-row">
+        <div><span class="badge sev-pass">Pass</span></div>
+        <div>
+          <div class="finding-title">XLV — genuine structural diversifier</div>
+          <div class="finding-body">Healthcare exhibits low correlation with tech/semis and performs relatively well in rate-shock and recession regimes. 
+          XLV at 13% is one of the few true risk-off buffers in this portfolio. Size is appropriate.</div>
+        </div>
+      </div>
+
+      <div class="finding-row">
+        <div><span class="badge sev-pass">Pass</span></div>
+        <div>
+          <div class="finding-title">FZROX — cost-efficient core</div>
+          <div class="finding-body">0% expense ratio. Total market coverage. Ideal as the portfolio's largest position. No action needed — this is the right anchor holding for a long-term Roth IRA.</div>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ── Section 7: Risk Metrics ───────────────────────────── -->
+  <section class="report-section">
+    <div class="section-header">
+      <div class="section-number">07</div>
+      <div>
+        <h2 class="section-title">Risk Metrics</h2>
+        <p class="section-sub">Quantitative structural risk profile</p>
+      </div>
+    </div>
+
+    <div class="card-grid">
+      <div class="stat-card">
+        <div class="stat-label">Portfolio Beta</div>
+        <div class="stat-value" style="color:var(--red);">~1.28</div>
+        <div class="stat-sub">High — tech/semi tilt drives beta above market</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Effective Tech Exposure</div>
+        <div class="stat-value" style="color:var(--red);">~35%</div>
+        <div class="stat-sub">After FZROX look-through; 2× declared</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Top 3 Positions</div>
+        <div class="stat-value" style="color:var(--yellow);">66%</div>
+        <div class="stat-sub">FZROX + XLV + SMH = high concentration</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Inflation Protection</div>
+        <div class="stat-value" style="color:var(--red);">0%</div>
+        <div class="stat-sub">No TIPS, commodities, or real assets</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Avg Holding Correlation</div>
+        <div class="stat-value" style="color:var(--yellow);">0.78</div>
+        <div class="stat-sub">High — limited true diversification</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Equity Allocation</div>
+        <div class="stat-value" style="color:var(--yellow);">97.5%</div>
+        <div class="stat-sub">Near-fully invested; no bonds or alts</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── Section 8: Overall Grade ──────────────────────────── -->
+  <section class="report-section">
+    <div class="section-header">
+      <div class="section-number">08</div>
+      <div>
+        <h2 class="section-title">Diagnostic Scorecard</h2>
+        <p class="section-sub">Five-dimension portfolio health assessment</p>
+      </div>
+    </div>
+
+    <div class="overall-grade-card" style="margin-bottom:24px;">
+      <div class="overall-grade-letter">B–</div>
+      <div class="overall-grade-detail">
+        <h3>Growth-Tilted, Structurally Sound Core — But Concentrated</h3>
+        <p>This Roth IRA is well-positioned for bull markets (especially AI/tech rallies) and has an excellent zero-cost core in FZROX. 
+        The grade is held back by hidden semiconductor concentration (~35% effective), zero inflation protection, 
+        single-stock idiosyncratic risk in VRT, and AVGO double-counted inside SMH. 
+        Adding one real-asset hedge and trimming the semi overlap would push this to B+ or A–.</p>
+      </div>
+    </div>
+
+    <div class="scan-scorecard">
+      <div class="score-item">
+        <div class="score-label">Diversification</div>
+        <div class="score-grade grade-c">C+</div>
+        <div class="score-sub">High equity correlation; no alternatives</div>
+      </div>
+      <div class="score-item">
+        <div class="score-label">Growth Potential</div>
+        <div class="score-grade grade-a">A</div>
+        <div class="score-sub">Semi + AI tilt; ideal for long horizon</div>
+      </div>
+      <div class="score-item">
+        <div class="score-label">Risk Management</div>
+        <div class="score-grade grade-c">C</div>
+        <div class="score-sub">No inflation hedge; high beta; thin cash</div>
+      </div>
+      <div class="score-item">
+        <div class="score-label">Cost Efficiency</div>
+        <div class="score-grade grade-a">A</div>
+        <div class="score-sub">FZROX at 0% ER; low blended cost</div>
+      </div>
+      <div class="score-item">
+        <div class="score-label">Structure</div>
+        <div class="score-grade grade-b">B</div>
+        <div class="score-sub">Clear core/satellite logic; AVGO overlap</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── Footer ────────────────────────────────────────────── -->
+  <footer class="page-footer">
+    <div class="footer-text">Portfolio Intelligence · Roth IRA Diagnostic Scan · Feb 21, 2026</div>
+    <div class="footer-disclaimer">For informational purposes only. Not financial advice. All correlation estimates and projected drawdowns are modeled approximations based on historical data and are not guarantees of future performance.</div>
+  </footer>
+
+</div><!-- /page-wrapper -->
+
+<script>
+  function exportPDF() {
+    window.print();
+  }
+</script>
+</body>
+</html>
