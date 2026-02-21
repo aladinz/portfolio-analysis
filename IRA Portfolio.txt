@@ -1,0 +1,10 @@
+VTI	U.S. equity core	~21%
+VXUS	International equity	~15%
+BNDW	Global bonds	~16%
+XLK	Tech sector tilt	~11%
+QUAL	Quality factor	~11%
+SCHD	Dividend / income	~10%
+XLV	Healthcare defense	~8%
+AVGO	Conviction growth	~4%
+VRT	Infrastructure / AI	~3%
+AMZN	Conviction growth	~2%

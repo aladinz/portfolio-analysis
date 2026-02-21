@@ -1,0 +1,755 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>IRA Portfolio — Optimization Report</title>
+  <link rel="stylesheet" href="portfolio.css" />
+</head>
+<body>
+
+<!-- ── Top Nav Bar ─────────────────────────────────────────── -->
+<nav class="top-bar">
+  <div class="top-bar-inner">
+    <div class="top-bar-brand">
+      <div class="brand-icon">📊</div>
+      <span class="brand-label">Portfolio Analysis</span>
+    </div>
+    <div class="top-bar-meta">
+      <span class="meta-chip">IRA Account</span>
+      <span class="meta-chip">Feb 20, 2026</span>
+      <span class="command-chip">/optimize</span>
+    </div>
+  </div>
+</nav>
+
+<div class="page-wrapper">
+
+  <!-- ── Hero ──────────────────────────────────────────────── -->
+  <header class="hero">
+    <div class="hero-eyebrow">Optimization Report · Version 2.0</div>
+    <h1 class="hero-title">IRA Portfolio <span>Optimization</span></h1>
+    <p class="hero-description">
+      Targeting an 8-position structure for cleaner management. Every position must clear the 5% minimum
+      threshold. Four holdings eliminated, two inflation-hedge vehicles added.
+      Overall grade moves from <strong style="color:var(--yellow)">B−</strong> to <strong style="color:var(--green)">A−</strong>.
+    </p>
+    <div class="hero-badges">
+      <span class="badge badge-green">8 Core Positions</span>
+      <span class="badge badge-red">4 Eliminated</span>
+      <span class="badge badge-accent">2 New Holdings</span>
+      <span class="badge badge-yellow">Inflation Gap Closed</span>
+      <span class="badge badge-blue">Risk Level Preserved</span>
+    </div>
+  </header>
+
+  <!-- ── Summary Stats ─────────────────────────────────────── -->
+  <div class="card-grid">
+    <div class="stat-card">
+      <div class="stat-label">Positions Before</div>
+      <div class="stat-value" style="color:var(--red)">10</div>
+      <div class="stat-note">Includes 4 below 5% threshold</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Positions After</div>
+      <div class="stat-value" style="color:var(--green)">8</div>
+      <div class="stat-note">Every slot ≥ 6% weight</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Capital Freed</div>
+      <div class="stat-value" style="color:var(--accent)">23%</div>
+      <div class="stat-note">From 4 eliminations + 1 trim</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Inflation Coverage</div>
+      <div class="stat-value" style="color:var(--yellow)">14%</div>
+      <div class="stat-note">IAU + VTIP (was 0%)</div>
+    </div>
+  </div>
+
+  <!-- ── Section 1 — Objectives ─────────────────────────────── -->
+  <section class="section">
+    <div class="section-header">
+      <div class="section-number">1</div>
+      <div class="section-title">Optimization Objectives</div>
+    </div>
+    <div class="card">
+      <ul style="list-style:none; display:flex; flex-direction:column; gap:10px;">
+        <li style="display:flex;gap:12px;align-items:flex-start;">
+          <span class="badge badge-red" style="margin-top:2px;flex-shrink:0">REMOVE</span>
+          <span style="color:var(--text-secondary);font-size:14px;"><strong style="color:var(--text-primary)">QUAL</strong> — no unique role at 0.93 correlation with VTI. Statistical duplicate.</span>
+        </li>
+        <li style="display:flex;gap:12px;align-items:flex-start;">
+          <span class="badge badge-red" style="margin-top:2px;flex-shrink:0">REMOVE</span>
+          <span style="color:var(--text-secondary);font-size:14px;"><strong style="color:var(--text-primary)">AVGO</strong> — quadruple-held across VTI + XLK + QUAL + direct. 5.1% effective weight adds only concentration.</span>
+        </li>
+        <li style="display:flex;gap:12px;align-items:flex-start;">
+          <span class="badge badge-red" style="margin-top:2px;flex-shrink:0">REMOVE</span>
+          <span style="color:var(--text-secondary);font-size:14px;"><strong style="color:var(--text-primary)">VRT &amp; AMZN</strong> — below the 5% minimum meaningful position threshold. Monitoring cost not justified by portfolio impact.</span>
+        </li>
+        <li style="display:flex;gap:12px;align-items:flex-start;">
+          <span class="badge badge-yellow" style="margin-top:2px;flex-shrink:0">TRIM</span>
+          <span style="color:var(--text-secondary);font-size:14px;"><strong style="color:var(--text-primary)">XLK</strong> 11% → 8% — VTI already carries ~6% tech internally. Right-size the explicit tilt.</span>
+        </li>
+        <li style="display:flex;gap:12px;align-items:flex-start;">
+          <span class="badge badge-green" style="margin-top:2px;flex-shrink:0">ADD</span>
+          <span style="color:var(--text-secondary);font-size:14px;"><strong style="color:var(--text-primary)">IAU + VTIP</strong> — close the inflation/stagflation gap. The portfolio's single largest structural blind spot.</span>
+        </li>
+        <li style="display:flex;gap:12px;align-items:flex-start;">
+          <span class="badge badge-blue" style="margin-top:2px;flex-shrink:0">MAINTAIN</span>
+          <span style="color:var(--text-secondary);font-size:14px;">Overall risk level preserved — equity-forward, bond-supported architecture unchanged.</span>
+        </li>
+      </ul>
+    </div>
+    <div class="info-box info-blue">
+      <div class="info-box-title">Position Sizing Rule Applied</div>
+      No position below 5%. Sub-5% weights add monitoring overhead without meaningfully moving a portfolio. Any holding below this threshold either gets sized up to earn its slot or eliminated.
+    </div>
+  </section>
+
+  <!-- ── Section 2 — Capital Flow ───────────────────────────── -->
+  <section class="section">
+    <div class="section-header">
+      <div class="section-number">2</div>
+      <div class="section-title">Capital Freed &amp; Redeployed</div>
+    </div>
+
+    <div class="two-col">
+      <div>
+        <div style="font-size:12px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--text-muted);margin-bottom:12px;">Capital Freed</div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr><th>Source</th><th>Freed</th><th>Reason</th></tr>
+            </thead>
+            <tbody>
+              <tr><td class="text-mono">QUAL</td><td class="delta-pos">+11%</td><td class="td-secondary">0.93 corr. with VTI</td></tr>
+              <tr><td class="text-mono">AVGO</td><td class="delta-pos">+4%</td><td class="td-secondary">Quadruple-held</td></tr>
+              <tr><td class="text-mono">VRT</td><td class="delta-pos">+3%</td><td class="td-secondary">Below 5% threshold</td></tr>
+              <tr><td class="text-mono">AMZN</td><td class="delta-pos">+2%</td><td class="td-secondary">Below 5% threshold</td></tr>
+              <tr><td class="text-mono">XLK trim</td><td class="delta-pos">+3%</td><td class="td-secondary">Right-size tech tilt</td></tr>
+              <tr class="total-row"><td>Total</td><td class="delta-pos">+23%</td><td></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div>
+        <div style="font-size:12px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--text-muted);margin-bottom:12px;">Capital Deployed</div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr><th>Destination</th><th>Added</th><th>Reason</th></tr>
+            </thead>
+            <tbody>
+              <tr class="row-new"><td class="text-mono">IAU</td><td class="delta-pos">+8%</td><td class="td-secondary">Inflation hedge</td></tr>
+              <tr class="row-new"><td class="text-mono">VTIP</td><td class="delta-pos">+6%</td><td class="td-secondary">Stagflation buffer</td></tr>
+              <tr><td class="text-mono">VTI</td><td class="delta-pos">+4%</td><td class="td-secondary">Strengthen core</td></tr>
+              <tr><td class="text-mono">VXUS</td><td class="delta-pos">+3%</td><td class="td-secondary">Full structural weight</td></tr>
+              <tr><td class="text-mono">SCHD</td><td class="delta-pos">+1%</td><td class="td-secondary">Marginal increase</td></tr>
+              <tr><td class="text-mono">XLV</td><td class="delta-pos">+1%</td><td class="td-secondary">Best diversifier</td></tr>
+              <tr class="total-row"><td>Total</td><td class="delta-pos">+23%</td><td></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── Section 3 — Allocation Comparison ─────────────────── -->
+  <section class="section">
+    <div class="section-header">
+      <div class="section-number">3</div>
+      <div class="section-title">Current vs. Optimized Allocation</div>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Holding</th>
+            <th>Current</th>
+            <th>Optimized</th>
+            <th>Delta</th>
+            <th>Status</th>
+            <th>Role</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="text-mono font-bold">VTI</td>
+            <td class="td-mono">21%</td>
+            <td class="td-mono font-bold">25%</td>
+            <td class="delta-pos">+4%</td>
+            <td><span class="badge badge-blue">CORE</span></td>
+            <td class="td-secondary">US market compounding engine</td>
+          </tr>
+          <tr>
+            <td class="text-mono font-bold">VXUS</td>
+            <td class="td-mono">15%</td>
+            <td class="td-mono font-bold">18%</td>
+            <td class="delta-pos">+3%</td>
+            <td><span class="badge badge-blue">CORE</span></td>
+            <td class="td-secondary">International equity — structural weight</td>
+          </tr>
+          <tr>
+            <td class="text-mono font-bold">BNDW</td>
+            <td class="td-mono">16%</td>
+            <td class="td-mono font-bold">15%</td>
+            <td class="delta-neg">−1%</td>
+            <td><span class="badge badge-green">HOLD</span></td>
+            <td class="td-secondary">Global bonds — recession/deflation buffer</td>
+          </tr>
+          <tr>
+            <td class="text-mono font-bold">SCHD</td>
+            <td class="td-mono">10%</td>
+            <td class="td-mono font-bold">11%</td>
+            <td class="delta-pos">+1%</td>
+            <td><span class="badge badge-green">HOLD</span></td>
+            <td class="td-secondary">Quality + dividend factor</td>
+          </tr>
+          <tr>
+            <td class="text-mono font-bold">XLV</td>
+            <td class="td-mono">8%</td>
+            <td class="td-mono font-bold">9%</td>
+            <td class="delta-pos">+1%</td>
+            <td><span class="badge badge-green">HOLD</span></td>
+            <td class="td-secondary">Healthcare defensive anchor</td>
+          </tr>
+          <tr>
+            <td class="text-mono font-bold">XLK</td>
+            <td class="td-mono">11%</td>
+            <td class="td-mono font-bold">8%</td>
+            <td class="delta-neg">−3%</td>
+            <td><span class="badge badge-yellow">TRIM</span></td>
+            <td class="td-secondary">Technology sector tilt — right-sized</td>
+          </tr>
+          <tr class="row-new">
+            <td class="text-mono font-bold">IAU</td>
+            <td class="td-mono text-muted">0%</td>
+            <td class="td-mono font-bold">8%</td>
+            <td class="delta-pos">+8%</td>
+            <td><span class="badge badge-accent">NEW</span></td>
+            <td class="td-secondary">Gold — inflation &amp; tail-risk hedge</td>
+          </tr>
+          <tr class="row-new">
+            <td class="text-mono font-bold">VTIP</td>
+            <td class="td-mono text-muted">0%</td>
+            <td class="td-mono font-bold">6%</td>
+            <td class="delta-pos">+6%</td>
+            <td><span class="badge badge-accent">NEW</span></td>
+            <td class="td-secondary">Short TIPS — stagflation protection</td>
+          </tr>
+          <tr class="row-eliminated">
+            <td class="text-mono">QUAL</td>
+            <td class="td-mono">11%</td>
+            <td class="td-mono">0%</td>
+            <td class="delta-neg">−11%</td>
+            <td><span class="badge badge-red">REMOVED</span></td>
+            <td class="td-secondary">Near-duplicate of VTI (0.93 corr.)</td>
+          </tr>
+          <tr class="row-eliminated">
+            <td class="text-mono">AVGO</td>
+            <td class="td-mono">4%</td>
+            <td class="td-mono">0%</td>
+            <td class="delta-neg">−4%</td>
+            <td><span class="badge badge-red">REMOVED</span></td>
+            <td class="td-secondary">Quadruple-held across ETFs</td>
+          </tr>
+          <tr class="row-eliminated">
+            <td class="text-mono">VRT</td>
+            <td class="td-mono">3%</td>
+            <td class="td-mono">0%</td>
+            <td class="delta-neg">−3%</td>
+            <td><span class="badge badge-red">REMOVED</span></td>
+            <td class="td-secondary">Below 5% minimum threshold</td>
+          </tr>
+          <tr class="row-eliminated">
+            <td class="text-mono">AMZN</td>
+            <td class="td-mono">2%</td>
+            <td class="td-mono">0%</td>
+            <td class="delta-neg">−2%</td>
+            <td><span class="badge badge-red">REMOVED</span></td>
+            <td class="td-secondary">Below 5% minimum threshold</td>
+          </tr>
+          <tr class="total-row">
+            <td>Total</td>
+            <td class="td-mono">100%</td>
+            <td class="td-mono">100%</td>
+            <td class="delta-neu">—</td>
+            <td></td>
+            <td></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ── Section 4 — Final Portfolio ───────────────────────── -->
+  <section class="section">
+    <div class="section-header">
+      <div class="section-number">4</div>
+      <div class="section-title">Final 8-Position Portfolio</div>
+      <span class="section-subtitle">Every slot ≥ 6%</span>
+    </div>
+
+    <!-- Allocation Bars -->
+    <div class="card alloc-bar-wrap">
+      <div class="alloc-bar-row">
+        <div class="alloc-bar-label">VTI</div>
+        <div class="alloc-bar-track"><div class="alloc-bar-fill bar-us" style="width:25%"></div></div>
+        <div class="alloc-bar-pct">25%</div>
+        <div class="alloc-bar-role">US Broad Equity — compounding engine</div>
+      </div>
+      <div class="alloc-bar-row">
+        <div class="alloc-bar-label">VXUS</div>
+        <div class="alloc-bar-track"><div class="alloc-bar-fill bar-intl" style="width:18%"></div></div>
+        <div class="alloc-bar-pct">18%</div>
+        <div class="alloc-bar-role">International Equity — geographic diversification</div>
+      </div>
+      <div class="alloc-bar-row">
+        <div class="alloc-bar-label">BNDW</div>
+        <div class="alloc-bar-track"><div class="alloc-bar-fill bar-bonds" style="width:15%"></div></div>
+        <div class="alloc-bar-pct">15%</div>
+        <div class="alloc-bar-role">Global Fixed Income — recession &amp; deflation buffer</div>
+      </div>
+      <div class="alloc-bar-row">
+        <div class="alloc-bar-label">SCHD</div>
+        <div class="alloc-bar-track"><div class="alloc-bar-fill bar-qual" style="width:11%"></div></div>
+        <div class="alloc-bar-pct">11%</div>
+        <div class="alloc-bar-role">Quality / Dividend Factor</div>
+      </div>
+      <div class="alloc-bar-row">
+        <div class="alloc-bar-label">XLV</div>
+        <div class="alloc-bar-track"><div class="alloc-bar-fill bar-health" style="width:9%"></div></div>
+        <div class="alloc-bar-pct">9%</div>
+        <div class="alloc-bar-role">Healthcare — defensive anchor</div>
+      </div>
+      <div class="alloc-bar-row">
+        <div class="alloc-bar-label">XLK</div>
+        <div class="alloc-bar-track"><div class="alloc-bar-fill bar-tech" style="width:8%"></div></div>
+        <div class="alloc-bar-pct">8%</div>
+        <div class="alloc-bar-role">Technology Sector — offensive tilt</div>
+      </div>
+      <div class="alloc-bar-row">
+        <div class="alloc-bar-label">IAU</div>
+        <div class="alloc-bar-track"><div class="alloc-bar-fill bar-gold" style="width:8%"></div></div>
+        <div class="alloc-bar-pct">8%</div>
+        <div class="alloc-bar-role">Gold — inflation &amp; tail-risk hedge</div>
+      </div>
+      <div class="alloc-bar-row">
+        <div class="alloc-bar-label">VTIP</div>
+        <div class="alloc-bar-track"><div class="alloc-bar-fill bar-tips" style="width:6%"></div></div>
+        <div class="alloc-bar-pct">6%</div>
+        <div class="alloc-bar-role">Short TIPS — stagflation protection</div>
+      </div>
+    </div>
+
+    <!-- Asset Class Summary -->
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th>Asset Class</th><th>Holdings</th><th>Before</th><th>After</th><th>Change</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><span class="badge badge-accent">US Equity</span></td>
+            <td class="td-secondary text-mono">VTI + SCHD + XLV + XLK</td>
+            <td class="td-mono">42%</td>
+            <td class="td-mono font-bold">44%</td>
+            <td class="delta-pos">+2%</td>
+          </tr>
+          <tr>
+            <td><span class="badge badge-purple">International</span></td>
+            <td class="td-secondary text-mono">VXUS</td>
+            <td class="td-mono">15%</td>
+            <td class="td-mono font-bold">18%</td>
+            <td class="delta-pos">+3%</td>
+          </tr>
+          <tr>
+            <td><span class="badge badge-green">Fixed Income</span></td>
+            <td class="td-secondary text-mono">BNDW + VTIP</td>
+            <td class="td-mono">16%</td>
+            <td class="td-mono font-bold">21%</td>
+            <td class="delta-pos">+5%</td>
+          </tr>
+          <tr class="row-new">
+            <td><span class="badge badge-yellow">Inflation Hedge</span></td>
+            <td class="td-secondary text-mono">IAU</td>
+            <td class="td-mono text-muted">0%</td>
+            <td class="td-mono font-bold">8%</td>
+            <td class="delta-pos">+8%</td>
+          </tr>
+          <tr class="row-eliminated">
+            <td><span class="badge badge-gray">Single Stocks</span></td>
+            <td class="td-secondary text-mono">AVGO + VRT + AMZN</td>
+            <td class="td-mono">9%</td>
+            <td class="td-mono">0%</td>
+            <td class="delta-neg">−9%</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ── Section 5 — Role Justification ────────────────────── -->
+  <section class="section">
+    <div class="section-header">
+      <div class="section-number">5</div>
+      <div class="section-title">Role Justification — Every Position Earns Its Place</div>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th>Holding</th><th>Weight</th><th>Non-Replicable Role</th><th>Regime Protected</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="text-mono font-bold" style="color:var(--accent)">VTI</td>
+            <td class="td-mono font-bold">25%</td>
+            <td class="td-secondary">Total US market beta — the irreplaceable zero-cost compounding engine. Foundation of the portfolio. No cheaper or more complete way to own the US market.</td>
+            <td><span class="badge badge-green">Growth</span></td>
+          </tr>
+          <tr>
+            <td class="text-mono font-bold" style="color:var(--purple)">VXUS</td>
+            <td class="td-mono font-bold">18%</td>
+            <td class="td-secondary">All ex-US equity in one vehicle. Geographic, currency, and earnings-cycle diversification. Only natural hedge to USD strength and US-specific events. Foreign dividends in an IRA avoid foreign tax credit complications.</td>
+            <td><span class="badge badge-blue">USD Weakness</span></td>
+          </tr>
+          <tr>
+            <td class="text-mono font-bold" style="color:var(--green)">BNDW</td>
+            <td class="td-mono font-bold">15%</td>
+            <td class="td-secondary">Global investment-grade bonds — the deflation and recession buffer. Provides genuine negative-to-low correlation with equities in risk-off regimes. Trimmed 1% to fund VTIP; together they now cover opposite rate regimes.</td>
+            <td><span class="badge badge-green">Deflation · Recession</span></td>
+          </tr>
+          <tr>
+            <td class="text-mono font-bold" style="color:var(--orange)">SCHD</td>
+            <td class="td-mono font-bold">11%</td>
+            <td class="td-secondary">Quality + dividend factor in explicit form. VTI dilutes profitable companies with the full ~3,700-stock universe. SCHD concentrates on dividend growers with strong profitability screens. Income in an IRA = tax-deferred compounding.</td>
+            <td><span class="badge badge-yellow">Growth · Mild Recession</span></td>
+          </tr>
+          <tr>
+            <td class="text-mono font-bold" style="color:var(--red)">XLV</td>
+            <td class="td-mono font-bold">9%</td>
+            <td class="td-secondary">Healthcare defensive sector. Lowest equity-to-equity correlation in the portfolio (~0.62 vs. VTI). The first line of defense in every downturn. Inelastic demand — people don't stop needing healthcare in recessions.</td>
+            <td><span class="badge badge-red">All Downturns</span></td>
+          </tr>
+          <tr>
+            <td class="text-mono font-bold" style="color:var(--blue)">XLK</td>
+            <td class="td-mono font-bold">8%</td>
+            <td class="td-secondary">Deliberate tech overweight above VTI's inherent ~6% internal tech weight. Trimmed from 11% to 8% — the tech/AI cycle thesis is valid, but not worth excessive double-counting above this level.</td>
+            <td><span class="badge badge-blue">Growth · AI Cycle</span></td>
+          </tr>
+          <tr class="row-new">
+            <td class="text-mono font-bold" style="color:var(--yellow)">IAU</td>
+            <td class="td-mono font-bold">8%</td>
+            <td class="td-secondary">Physical gold. The only asset that simultaneously benefits from monetary debasement, dollar weakness, geopolitical shock, and inflation. Zero coupon — underperforms in Goldilocks but provides the most unique uncorrelated return available in an 8-position structure.</td>
+            <td><span class="badge badge-yellow">Inflation · Tail Risk</span></td>
+          </tr>
+          <tr class="row-new">
+            <td class="text-mono font-bold" style="color:var(--green-text)">VTIP</td>
+            <td class="td-mono font-bold">6%</td>
+            <td class="td-secondary">Short-duration TIPS — this distinction matters. Long TIPS still lose NAV when real rates rise. VTIP provides CPI pass-through with minimal interest rate sensitivity. The surgical instrument that closes the BNDW stagflation gap: BNDW loses in inflation, VTIP wins.</td>
+            <td><span class="badge badge-yellow">Stagflation · Inflation</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ── Section 6 — Regime Coverage ───────────────────────── -->
+  <section class="section">
+    <div class="section-header">
+      <div class="section-number">6</div>
+      <div class="section-title">Regime Coverage — Before vs. After</div>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th>Regime</th><th>Before (Original)</th><th>Optimized (8 Holdings)</th><th>Key Improvement</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><span class="badge badge-green">Goldilocks Growth</span></td>
+            <td class="regime-positive">+18% to +26%</td>
+            <td class="regime-positive">+16% to +24%</td>
+            <td class="regime-neutral">Slight drag — IAU/VTIP lag in pure growth</td>
+          </tr>
+          <tr class="highlight-row">
+            <td><span class="badge badge-red">Inflation Surge</span></td>
+            <td class="regime-negative">−15% to −28%</td>
+            <td class="regime-negative">−8% to −18%</td>
+            <td class="regime-improve">★ Major — VTIP gains, IAU gains simultaneously</td>
+          </tr>
+          <tr class="highlight-row">
+            <td><span class="badge badge-red">Stagflation</span></td>
+            <td class="regime-negative">−20% to −30%</td>
+            <td class="regime-negative">−10% to −20%</td>
+            <td class="regime-improve">★ Major — Only regime where both VTIP &amp; IAU win</td>
+          </tr>
+          <tr>
+            <td><span class="badge badge-blue">Deflation / Credit Crisis</span></td>
+            <td class="regime-negative">−10% to −20%</td>
+            <td class="regime-negative">−9% to −18%</td>
+            <td class="regime-neutral">Maintained — BNDW still carries this</td>
+          </tr>
+          <tr>
+            <td><span class="badge badge-yellow">Recession + Rate Cuts</span></td>
+            <td class="regime-negative">−8% to −15%</td>
+            <td class="regime-negative">−7% to −13%</td>
+            <td class="regime-improve">Slight — gold often rallies in cut cycles</td>
+          </tr>
+          <tr>
+            <td><span class="badge badge-orange">Liquidity Crisis</span></td>
+            <td class="regime-negative">−22% to −38%</td>
+            <td class="regime-negative">−18% to −32%</td>
+            <td class="regime-improve">IAU + BNDW provide dual safe-haven buffer</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ── Section 7 — Eliminations ──────────────────────────── -->
+  <section class="section">
+    <div class="section-header">
+      <div class="section-number">7</div>
+      <div class="section-title">What Was Eliminated and Why</div>
+    </div>
+
+    <div class="elim-card">
+      <div class="elim-card-title">✕ QUAL — Eliminated (11% → 0%)</div>
+      <div class="elim-card-body">
+        At 0.93 correlation with VTI, QUAL is statistically a more expensive, less diversified version of VTI's top tier. Its top holdings — Apple, Microsoft, Nvidia, Meta, Alphabet — are nearly
+        identical to VTI's top holdings. The 11% allocation added meaningful concentration without adding a materially different return stream. The 11% is redeployed into IAU and VTIP, the two
+        assets that cover the regime (inflation/stagflation) most likely to destroy a QUAL-heavy portfolio.
+      </div>
+    </div>
+
+    <div class="elim-card">
+      <div class="elim-card-title">✕ AVGO — Eliminated (4% → 0%)</div>
+      <div class="elim-card-body">
+        True effective AVGO weight was ~5.1% across four layers: direct (4%) + XLK (~0.6%) + QUAL (~0.3%) + VTI (~0.2%). Holding it directly added single-stock earnings event risk on top of an already
+        concentrated underlying position. The semiconductor thesis is fully expressed through VTI's inherent tech weight and XLK.
+      </div>
+    </div>
+
+    <div class="elim-card">
+      <div class="elim-card-title">✕ VRT — Eliminated (3% → 0%)</div>
+      <div class="elim-card-body">
+        The AI data center power/cooling thesis is valid, but 3% is too small to materially move the portfolio. It adds single-stock monitoring cost for roughly 0.3% tracking difference against XLK.
+        <strong style="color:var(--yellow-text)">Note:</strong> VRT can return as an optional 9th position at 4–5% (funded by trimming VTI) if this remains a high-conviction individual name.
+      </div>
+    </div>
+
+    <div class="elim-card">
+      <div class="elim-card-title">✕ AMZN — Eliminated (2% → 0%)</div>
+      <div class="elim-card-body">
+        At 2%, AMZN cannot move the portfolio. AMZN comprises ~3.5% of VTI, giving ~0.7% effective exposure through the core already.
+        The direct allocation adds earnings-monitoring overhead for a position too small to generate meaningful alpha contribution.
+      </div>
+    </div>
+  </section>
+
+  <!-- ── Section 8 — Optional 9th ──────────────────────────── -->
+  <section class="section">
+    <div class="section-header">
+      <div class="section-number">8</div>
+      <div class="section-title">Optional 9th Position</div>
+    </div>
+    <div class="optional-box">
+      <div class="optional-label">⚡ VRT — High Conviction Add-Back</div>
+      <p style="font-size:14px;color:var(--text-secondary);margin-bottom:18px;">
+        VRT is the only eliminated name that earns re-entry. Data center power and thermal management infrastructure is a genuine AI bottleneck not expressible through any current ETF.
+        If this remains high-conviction, add back at 4% by trimming VTI from 25% → 21%.
+      </p>
+      <div class="table-wrap" style="margin-bottom:0;">
+        <table>
+          <thead><tr><th>#</th><th>Holding</th><th>Weight</th><th>Δ from 8-position</th></tr></thead>
+          <tbody>
+            <tr><td class="td-mono text-muted">1</td><td class="text-mono font-bold">VTI</td><td class="td-mono">21%</td><td class="delta-neg">−4%</td></tr>
+            <tr><td class="td-mono text-muted">2</td><td class="text-mono font-bold">VXUS</td><td class="td-mono">18%</td><td class="delta-neu">—</td></tr>
+            <tr><td class="td-mono text-muted">3</td><td class="text-mono font-bold">BNDW</td><td class="td-mono">15%</td><td class="delta-neu">—</td></tr>
+            <tr><td class="td-mono text-muted">4</td><td class="text-mono font-bold">SCHD</td><td class="td-mono">11%</td><td class="delta-neu">—</td></tr>
+            <tr><td class="td-mono text-muted">5</td><td class="text-mono font-bold">XLV</td><td class="td-mono">9%</td><td class="delta-neu">—</td></tr>
+            <tr><td class="td-mono text-muted">6</td><td class="text-mono font-bold">XLK</td><td class="td-mono">8%</td><td class="delta-neu">—</td></tr>
+            <tr><td class="td-mono text-muted">7</td><td class="text-mono font-bold">IAU</td><td class="td-mono">8%</td><td class="delta-neu">—</td></tr>
+            <tr><td class="td-mono text-muted">8</td><td class="text-mono font-bold">VTIP</td><td class="td-mono">6%</td><td class="delta-neu">—</td></tr>
+            <tr class="row-new"><td class="td-mono text-muted">9</td><td class="text-mono font-bold">VRT</td><td class="td-mono">4%</td><td class="delta-pos">+4%</td></tr>
+            <tr class="total-row"><td></td><td>Total</td><td class="td-mono">100%</td><td></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── Section 9 — Structural Improvements ───────────────── -->
+  <section class="section">
+    <div class="section-header">
+      <div class="section-number">9</div>
+      <div class="section-title">Structural Improvements Summary</div>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Issue (from Scan)</th><th>Fix Applied</th></tr></thead>
+        <tbody>
+          <tr>
+            <td class="td-secondary">VTI + QUAL + SCHD triple-overlap (42%)</td>
+            <td class="text-green">QUAL eliminated → overlap resolved; each position now distinct</td>
+          </tr>
+          <tr>
+            <td class="td-secondary">AVGO quadruple-held (5.1% true weight)</td>
+            <td class="text-green">AVGO eliminated → no redundant single-stock layering</td>
+          </tr>
+          <tr>
+            <td class="td-secondary">Zero inflation protection (D grade)</td>
+            <td class="text-green">VTIP + IAU added at 14% → inflation now genuinely hedged</td>
+          </tr>
+          <tr>
+            <td class="td-secondary">BNDW fails in stagflation</td>
+            <td class="text-green">VTIP added as bond sleeve's inflation counterpart</td>
+          </tr>
+          <tr>
+            <td class="td-secondary">Tech double-count (VTI + XLK ~19–20%)</td>
+            <td class="text-green">XLK trimmed to 8% → effective tech ~14–15%</td>
+          </tr>
+          <tr>
+            <td class="td-secondary">Single stocks below meaningful weight</td>
+            <td class="text-green">VRT and AMZN eliminated; position minimum now 6%</td>
+          </tr>
+          <tr>
+            <td class="td-secondary">Portfolio too complex for ongoing management</td>
+            <td class="text-green">Reduced from 10 to 8 positions; every slot ≥ 6%</td>
+          </tr>
+          <tr>
+            <td class="td-secondary">Factor design grade: C+</td>
+            <td class="text-green">QUAL removed; SCHD retained for distinct dividend/quality role</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ── Section 10 — Scorecard ─────────────────────────────── -->
+  <section class="section">
+    <div class="section-header">
+      <div class="section-number">10</div>
+      <div class="section-title">Optimization Scorecard</div>
+    </div>
+    <div class="scorecard-grid">
+
+      <div class="grade-card">
+        <div class="grade-badge grade-a">A</div>
+        <div class="grade-info">
+          <div class="grade-label">Structural Clarity</div>
+          <div class="grade-dim">Was B · Improved</div>
+        </div>
+      </div>
+
+      <div class="grade-card">
+        <div class="grade-badge grade-a">A−</div>
+        <div class="grade-info">
+          <div class="grade-label">Redundancy Management</div>
+          <div class="grade-dim">Was C · Major improvement</div>
+        </div>
+      </div>
+
+      <div class="grade-card">
+        <div class="grade-badge grade-b">B+</div>
+        <div class="grade-info">
+          <div class="grade-label">Regime Coverage</div>
+          <div class="grade-dim">Was B− · Improved</div>
+        </div>
+      </div>
+
+      <div class="grade-card">
+        <div class="grade-badge grade-b">B+</div>
+        <div class="grade-info">
+          <div class="grade-label">Inflation Protection</div>
+          <div class="grade-dim">Was D · Major improvement</div>
+        </div>
+      </div>
+
+      <div class="grade-card">
+        <div class="grade-badge grade-a">A</div>
+        <div class="grade-info">
+          <div class="grade-label">Manageability</div>
+          <div class="grade-dim">Was C+ · 10 → 8 positions</div>
+        </div>
+      </div>
+
+      <div class="grade-card">
+        <div class="grade-badge grade-a">A</div>
+        <div class="grade-info">
+          <div class="grade-label">Single-Stock Discipline</div>
+          <div class="grade-dim">Was C+ · 3 stocks → 0</div>
+        </div>
+      </div>
+
+      <div class="grade-card">
+        <div class="grade-badge grade-a">A−</div>
+        <div class="grade-info">
+          <div class="grade-label">Factor Design</div>
+          <div class="grade-dim">Was C+ · QUAL overlap removed</div>
+        </div>
+      </div>
+
+      <div class="grade-card">
+        <div class="grade-badge grade-b">B</div>
+        <div class="grade-info">
+          <div class="grade-label">Crisis Buffer</div>
+          <div class="grade-dim">Was B− · IAU + BNDW dual layer</div>
+        </div>
+      </div>
+
+    </div>
+
+    <div style="margin-top:20px; padding:20px 24px; background:var(--bg-card); border:1px solid var(--border); border-radius:var(--radius-lg); display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:16px;">
+      <div>
+        <div style="font-size:12px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--text-muted);margin-bottom:6px;">Overall Grade</div>
+        <div style="display:flex;align-items:center;gap:16px;">
+          <div style="text-align:center;">
+            <div style="font-size:11px;color:var(--text-muted);margin-bottom:3px;">Before</div>
+            <div style="font-size:32px;font-weight:700;font-family:var(--font-mono);color:var(--yellow)">B−</div>
+          </div>
+          <div style="font-size:24px;color:var(--text-muted)">→</div>
+          <div style="text-align:center;">
+            <div style="font-size:11px;color:var(--text-muted);margin-bottom:3px;">After</div>
+            <div style="font-size:32px;font-weight:700;font-family:var(--font-mono);color:var(--green)">A−</div>
+          </div>
+        </div>
+      </div>
+      <div style="max-width:420px;">
+        <p style="font-size:13px;color:var(--text-secondary);line-height:1.65;">
+          The two moves that change everything: <strong style="color:var(--text-primary)">QUAL eliminated</strong>
+          frees 11% from a near-duplicate position. <strong style="color:var(--text-primary)">VTIP + IAU added</strong>
+          closes the inflation gap — the one regime where every prior holding loses at the same time. The portfolio now
+          covers all six major macro regimes with a genuine offset in each.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── Footer ─────────────────────────────────────────────── -->
+  <footer class="page-footer">
+    <div class="footer-text">Portfolio Analysis System · IRA Account · Feb 20, 2026</div>
+    <div class="footer-disclaimer">
+      For personal reference only. Not investment advice.
+      Past analysis does not guarantee future results.
+    </div>
+  </footer>
+
+</div><!-- end page-wrapper -->
+
+<!-- ── PDF Export Button ──────────────────────────────────── -->
+<button class="pdf-export-btn" id="pdfBtn" onclick="exportPDF()">
+  <span class="btn-icon">⬇</span>
+  <span class="btn-spinner"></span>
+  <span class="btn-label">Export PDF</span>
+</button>
+
+<script>
+  function exportPDF() {
+    window.print();
+  }
+</script>
+</body>
+</html>
