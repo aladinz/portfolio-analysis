@@ -1,0 +1,972 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>IRA Portfolio — /scan (Profile-Aware)</title>
+  <link rel="stylesheet" href="portfolio.css" />
+  <style>
+    :root {
+      --scan-accent: #f87171;
+      --scan-accent-dim: #3b1010;
+    }
+    .cmd-chip { background: var(--scan-accent-dim); color: var(--scan-accent); border-color: rgba(248,113,113,0.25); }
+
+    /* ── Profile context strip ── */
+    .profile-strip {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 1px;
+      background: var(--border);
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+      margin-bottom: 32px;
+    }
+    .ps-cell { background: #141824; padding: 16px 14px; }
+    .ps-label { font-size: 10px; text-transform: uppercase; letter-spacing: 0.07em; color: var(--text-muted); margin-bottom: 5px; }
+    .ps-val   { font-size: 13px; font-weight: 700; color: var(--text-primary); line-height: 1.4; }
+
+    /* ── Violation badge ── */
+    .viol-hard  { background:#3b1010; color:#f87171; border:1px solid rgba(248,113,113,0.35); padding:3px 9px; border-radius:20px; font-size:11px; font-weight:700; }
+    .viol-soft  { background:#3d2c05; color:#fbbf24; border:1px solid rgba(251,191,36,0.3);  padding:3px 9px; border-radius:20px; font-size:11px; font-weight:700; }
+    .viol-pass  { background:#0d3326; color:#34d399; border:1px solid rgba(52,211,153,0.25); padding:3px 9px; border-radius:20px; font-size:11px; font-weight:700; }
+    .viol-info  { background:#0d2545; color:#60a5fa; border:1px solid rgba(96,165,250,0.25); padding:3px 9px; border-radius:20px; font-size:11px; font-weight:700; }
+
+    /* ── Holdings table ── */
+    .hold-tbl { width: 100%; border-collapse: collapse; font-size: 13px; }
+    .hold-tbl th {
+      text-align: left; padding: 10px 12px; background: var(--bg-card-alt);
+      color: var(--text-secondary); font-size: 11px; text-transform: uppercase;
+      letter-spacing: 0.06em; border-bottom: 1px solid var(--border);
+    }
+    .hold-tbl td { padding: 12px 12px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+    .hold-tbl tr:last-child td { border-bottom: none; }
+    .hold-tbl tr:hover td { background: var(--bg-hover); }
+    .hold-tbl tr.row-violation td { background: rgba(248,113,113,0.04); }
+    .hold-tbl tr.row-warn td     { background: rgba(251,191,36,0.03); }
+
+    /* ── Constraint audit ── */
+    .audit-row {
+      display: grid; grid-template-columns: 200px 1fr auto;
+      gap: 16px; align-items: start; padding: 16px 0; border-bottom: 1px solid var(--border);
+    }
+    .audit-row:last-child { border-bottom: none; }
+    .audit-label { font-weight: 700; font-size: 14px; color: var(--text-primary); }
+    .audit-desc  { font-size: 13px; color: var(--text-secondary); line-height: 1.6; }
+    .audit-status { text-align: right; flex-shrink: 0; }
+
+    /* ── Belief matrix ── */
+    .belief-matrix { width: 100%; border-collapse: collapse; font-size: 13px; }
+    .belief-matrix th {
+      padding: 10px 14px; background: var(--bg-card-alt); color: var(--text-secondary);
+      font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em;
+      border-bottom: 1px solid var(--border); text-align: left;
+    }
+    .belief-matrix td { padding: 14px 14px; border-bottom: 1px solid var(--border); vertical-align: top; }
+    .belief-matrix tr:last-child td { border-bottom: none; }
+    .belief-matrix tr:hover td { background: var(--bg-hover); }
+    .belief-name { font-weight: 700; font-size: 13px; color: var(--text-primary); }
+    .belief-sub  { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+
+    /* ── Overlap ── */
+    .corr-pill { display: inline-block; padding: 2px 9px; border-radius: 20px; font-family: var(--font-mono); font-size: 12px; font-weight: 600; }
+    .corr-high { background: #3b1010; color: #f87171; }
+    .corr-med  { background: #3d2c05; color: #fbbf24; }
+    .corr-low  { background: #0d3326; color: #34d399; }
+
+    /* ── Stress table ── */
+    .stress-tbl { width: 100%; border-collapse: collapse; font-size: 13px; }
+    .stress-tbl th {
+      text-align: left; padding: 10px 12px; background: var(--bg-card-alt);
+      color: var(--text-secondary); font-size: 11px; text-transform: uppercase;
+      letter-spacing: 0.06em; border-bottom: 1px solid var(--border);
+    }
+    .stress-tbl td { padding: 11px 12px; border-bottom: 1px solid var(--border); }
+    .stress-tbl tr:last-child td { border-bottom: none; }
+    .stress-tbl tr:hover td { background: var(--bg-hover); }
+    .draw-bar { display: flex; align-items: center; gap: 10px; }
+    .draw-fill { height: 8px; border-radius: 4px; background: var(--scan-accent); min-width: 4px; }
+    .draw-lbl  { font-family: var(--font-mono); font-size: 12px; color: var(--red); font-weight: 600; }
+    .draw-lbl.ok { color: var(--green); }
+
+    /* ── Finding rows ── */
+    .finding-row {
+      display: grid; grid-template-columns: 100px 1fr; gap: 14px;
+      align-items: start; padding: 14px 0; border-bottom: 1px solid var(--border);
+    }
+    .finding-row:last-child { border-bottom: none; }
+
+    /* ── Scorecard ── */
+    .scan-scorecard { display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; }
+    .score-item { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-md); padding: 16px; text-align: center; }
+    .score-label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-muted); margin-bottom: 8px; }
+    .score-grade { font-size: 28px; font-weight: 800; line-height: 1; margin-bottom: 4px; }
+    .score-sub   { font-size: 11px; color: var(--text-secondary); }
+    .grade-a { color: #34d399; }
+    .grade-b { color: #60a5fa; }
+    .grade-c { color: #fbbf24; }
+    .grade-d { color: #f87171; }
+
+    .overall-grade-card {
+      background: linear-gradient(135deg, #1a1d27, #1e2130);
+      border: 1px solid var(--border); border-radius: var(--radius-lg);
+      padding: 32px; display: flex; align-items: center; gap: 32px;
+    }
+    .overall-grade-letter { font-size: 80px; font-weight: 900; line-height: 1; flex-shrink: 0; }
+
+    @media (max-width: 700px) {
+      .profile-strip { grid-template-columns: 1fr 1fr; }
+      .scan-scorecard { grid-template-columns: repeat(3, 1fr); }
+      .audit-row { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ── Top Bar ─────────────────────────────────────────────── -->
+<nav class="top-bar">
+  <div class="top-bar-inner">
+    <div class="top-bar-brand">
+      <div class="brand-icon">P</div>
+      <span class="brand-name">Portfolio Intelligence</span>
+    </div>
+    <div class="top-bar-meta">
+      <span class="meta-chip">IRA Portfolio</span>
+      <span class="meta-chip">Profile-Aware</span>
+      <span class="meta-chip">Feb 22, 2026</span>
+      <span class="meta-chip cmd-chip">/scan</span>
+    </div>
+  </div>
+</nav>
+
+<!-- ── Export Button ──────────────────────────────────────── -->
+<button class="pdf-export-btn" id="pdfBtn" onclick="exportPDF()">
+  <span class="btn-icon">↓</span>
+  <span class="btn-label">Export PDF</span>
+</button>
+
+<div class="page-wrapper">
+
+  <!-- ── Hero ─────────────────────────────────────────────── -->
+  <header class="report-hero">
+    <div class="hero-eyebrow">
+      <span class="badge" style="background:#3b1010; color:#f87171; border:1px solid rgba(248,113,113,0.3);">⚠ 3 Constraint Violations</span>
+      <span class="badge badge-outline">10 Positions · 3 Single Stocks</span>
+      <span class="badge badge-outline">Profile: Moderate / Balanced</span>
+    </div>
+    <h1 class="hero-title">IRA Portfolio — Profile-Aware Diagnostic Scan</h1>
+    <p class="hero-sub">Holdings from <strong>IRA Portfolio.txt</strong> evaluated against the constraints and macro beliefs declared in <strong>profile.txt</strong>. Three hard constraint violations detected before any market analysis begins.</p>
+  </header>
+
+  <!-- ── Profile Context ───────────────────────────────────── -->
+  <section class="report-section">
+    <div class="section-header">
+      <div class="section-number">00</div>
+      <div>
+        <h2 class="section-title">Profile Constraints — Active Scan Framework</h2>
+        <p class="section-sub">Every finding below is evaluated against these declared parameters</p>
+      </div>
+    </div>
+
+    <div class="profile-strip">
+      <div class="ps-cell">
+        <div class="ps-label">Time Horizon</div>
+        <div class="ps-val">Medium<br><span style="color:var(--text-muted); font-size:11px; font-weight:400;">3–10 years</span></div>
+      </div>
+      <div class="ps-cell">
+        <div class="ps-label">Objective</div>
+        <div class="ps-val">Balanced<br><span style="color:var(--text-muted); font-size:11px; font-weight:400;">Slight growth tilt</span></div>
+      </div>
+      <div class="ps-cell">
+        <div class="ps-label">Risk Tolerance</div>
+        <div class="ps-val">Moderate<br><span style="color:var(--text-muted); font-size:11px; font-weight:400;">Comfortable with drawdowns</span></div>
+      </div>
+      <div class="ps-cell">
+        <div class="ps-label">Position Limit</div>
+        <div class="ps-val" style="color:#f87171;">Max 7<br><span style="color:#f87171; font-size:11px; font-weight:400;">Current: 10 ✗</span></div>
+      </div>
+      <div class="ps-cell">
+        <div class="ps-label">Instrument Pref</div>
+        <div class="ps-val" style="color:#f87171;">ETFs Only<br><span style="color:#f87171; font-size:11px; font-weight:400;">3 single stocks ✗</span></div>
+      </div>
+    </div>
+
+    <div style="display:grid; grid-template-columns: repeat(4, 1fr); gap: 10px;">
+      <div style="background:#141824; border:1px solid rgba(251,146,60,0.2); border-radius:var(--radius-md); padding:14px;">
+        <div style="font-size:10px; text-transform:uppercase; letter-spacing:0.07em; color:#fb923c; margin-bottom:6px; font-weight:600;">Belief 1</div>
+        <div style="font-size:13px; font-weight:700; color:var(--text-primary);">Inflation elevated</div>
+        <div style="font-size:12px; color:var(--text-secondary); margin-top:4px;">Requires: TIPS, gold, or commodity ETF</div>
+      </div>
+      <div style="background:#141824; border:1px solid rgba(167,139,250,0.2); border-radius:var(--radius-md); padding:14px;">
+        <div style="font-size:10px; text-transform:uppercase; letter-spacing:0.07em; color:#a78bfa; margin-bottom:6px; font-weight:600;">Belief 2</div>
+        <div style="font-size:13px; font-weight:700; color:var(--text-primary);">Tech leads innovation</div>
+        <div style="font-size:12px; color:var(--text-secondary); margin-top:4px;">Requires: tech overweight via ETF</div>
+      </div>
+      <div style="background:#141824; border:1px solid rgba(251,191,36,0.2); border-radius:var(--radius-md); padding:14px;">
+        <div style="font-size:10px; text-transform:uppercase; letter-spacing:0.07em; color:#fbbf24; margin-bottom:6px; font-weight:600;">Belief 3</div>
+        <div style="font-size:13px; font-weight:700; color:var(--text-primary);">Rates higher for longer</div>
+        <div style="font-size:12px; color:var(--text-secondary); margin-top:4px;">Avoid: long-duration bonds</div>
+      </div>
+      <div style="background:#141824; border:1px solid rgba(134,239,172,0.2); border-radius:var(--radius-md); padding:14px;">
+        <div style="font-size:10px; text-transform:uppercase; letter-spacing:0.07em; color:#86efac; margin-bottom:6px; font-weight:600;">Belief 4</div>
+        <div style="font-size:13px; font-weight:700; color:var(--text-primary);">Commodities to benefit</div>
+        <div style="font-size:12px; color:var(--text-secondary); margin-top:4px;">Requires: commodity ETF exposure</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── Section 1: Holdings Snapshot ─────────────────────── -->
+  <section class="report-section">
+    <div class="section-header">
+      <div class="section-number">01</div>
+      <div>
+        <h2 class="section-title">Holdings Snapshot</h2>
+        <p class="section-sub">Current 10-position portfolio — constraint flags applied</p>
+      </div>
+    </div>
+
+    <div class="card">
+      <table class="hold-tbl">
+        <thead>
+          <tr>
+            <th>Ticker</th>
+            <th>Description</th>
+            <th>Alloc</th>
+            <th>Type</th>
+            <th>Constraint Status</th>
+            <th>Belief Alignment</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><span class="ticker-badge">VTI</span></td>
+            <td style="color:var(--text-secondary); font-size:12px;">Vanguard Total Stock Market ETF</td>
+            <td>
+              <div style="display:flex; align-items:center; gap:8px;">
+                <div style="width:70px; height:7px; background:var(--border); border-radius:4px; overflow:hidden;">
+                  <div style="width:21%; height:100%; background:#6c8aff; border-radius:4px;"></div>
+                </div>
+                <span style="font-family:var(--font-mono); font-size:12px; font-weight:700; color:#6c8aff;">21%</span>
+              </div>
+            </td>
+            <td><span class="viol-pass">ETF ✓</span></td>
+            <td><span class="viol-pass">Pass</span></td>
+            <td style="font-size:12px; color:var(--text-secondary);">Core. Growth tilt ✓. Tech via look-through ✓. Inflation neutral.</td>
+          </tr>
+          <tr>
+            <td><span class="ticker-badge">VXUS</span></td>
+            <td style="color:var(--text-secondary); font-size:12px;">Vanguard Total International Stock ETF</td>
+            <td>
+              <div style="display:flex; align-items:center; gap:8px;">
+                <div style="width:70px; height:7px; background:var(--border); border-radius:4px; overflow:hidden;">
+                  <div style="width:15%; height:100%; background:#a78bfa; border-radius:4px;"></div>
+                </div>
+                <span style="font-family:var(--font-mono); font-size:12px; font-weight:700; color:#a78bfa;">15%</span>
+              </div>
+            </td>
+            <td><span class="viol-pass">ETF ✓</span></td>
+            <td><span class="viol-pass">Pass</span></td>
+            <td style="font-size:12px; color:var(--text-secondary);">Geographic diversifier. USD hedge. Acceptable but heavy at 15%.</td>
+          </tr>
+          <tr class="row-violation">
+            <td><span class="ticker-badge" style="background:#3b1010; color:#f87171; border-color:rgba(248,113,113,0.4);">BNDW</span></td>
+            <td style="color:var(--text-secondary); font-size:12px;">Vanguard Total World Bond ETF</td>
+            <td>
+              <div style="display:flex; align-items:center; gap:8px;">
+                <div style="width:70px; height:7px; background:var(--border); border-radius:4px; overflow:hidden;">
+                  <div style="width:16%; height:100%; background:#f87171; border-radius:4px;"></div>
+                </div>
+                <span style="font-family:var(--font-mono); font-size:12px; font-weight:700; color:#f87171;">16%</span>
+              </div>
+            </td>
+            <td><span class="viol-pass">ETF ✓</span></td>
+            <td><span class="viol-hard">Belief ✗</span></td>
+            <td style="font-size:12px; color:#f87171; font-weight:600;">Long-duration bonds in a "rates higher for longer" regime. Largest structural liability. –18% analog loss in 2022.</td>
+          </tr>
+          <tr>
+            <td><span class="ticker-badge">XLK</span></td>
+            <td style="color:var(--text-secondary); font-size:12px;">Tech Select Sector SPDR</td>
+            <td>
+              <div style="display:flex; align-items:center; gap:8px;">
+                <div style="width:70px; height:7px; background:var(--border); border-radius:4px; overflow:hidden;">
+                  <div style="width:11%; height:100%; background:#a78bfa; border-radius:4px;"></div>
+                </div>
+                <span style="font-family:var(--font-mono); font-size:12px; font-weight:700; color:#a78bfa;">11%</span>
+              </div>
+            </td>
+            <td><span class="viol-pass">ETF ✓</span></td>
+            <td><span class="viol-soft">Overlap</span></td>
+            <td style="font-size:12px; color:var(--yellow-text);">Belief 2 expressed correctly. But overlaps heavily with VTI's 28%+ tech weight and QUAL's top holdings.</td>
+          </tr>
+          <tr>
+            <td><span class="ticker-badge">QUAL</span></td>
+            <td style="color:var(--text-secondary); font-size:12px;">iShares MSCI USA Quality Factor ETF</td>
+            <td>
+              <div style="display:flex; align-items:center; gap:8px;">
+                <div style="width:70px; height:7px; background:var(--border); border-radius:4px; overflow:hidden;">
+                  <div style="width:11%; height:100%; background:#60a5fa; border-radius:4px;"></div>
+                </div>
+                <span style="font-family:var(--font-mono); font-size:12px; font-weight:700; color:#60a5fa;">11%</span>
+              </div>
+            </td>
+            <td><span class="viol-pass">ETF ✓</span></td>
+            <td><span class="viol-soft">Redundant</span></td>
+            <td style="font-size:12px; color:var(--yellow-text);">Top holdings (AAPL, MSFT, NVDA) overlap significantly with VTI + XLK. Adds quality factor tilt but creates tech concentration.</td>
+          </tr>
+          <tr>
+            <td><span class="ticker-badge">SCHD</span></td>
+            <td style="color:var(--text-secondary); font-size:12px;">Schwab US Dividend Equity ETF</td>
+            <td>
+              <div style="display:flex; align-items:center; gap:8px;">
+                <div style="width:70px; height:7px; background:var(--border); border-radius:4px; overflow:hidden;">
+                  <div style="width:10%; height:100%; background:#fbbf24; border-radius:4px;"></div>
+                </div>
+                <span style="font-family:var(--font-mono); font-size:12px; font-weight:700; color:#fbbf24;">10%</span>
+              </div>
+            </td>
+            <td><span class="viol-pass">ETF ✓</span></td>
+            <td><span class="viol-pass">Pass</span></td>
+            <td style="font-size:12px; color:var(--text-secondary);">Income requirement ✓. Value/defensive tilt. Correct for balanced objective.</td>
+          </tr>
+          <tr>
+            <td><span class="ticker-badge">XLV</span></td>
+            <td style="color:var(--text-secondary); font-size:12px;">Health Care Select Sector SPDR</td>
+            <td>
+              <div style="display:flex; align-items:center; gap:8px;">
+                <div style="width:70px; height:7px; background:var(--border); border-radius:4px; overflow:hidden;">
+                  <div style="width:8%; height:100%; background:#34d399; border-radius:4px;"></div>
+                </div>
+                <span style="font-family:var(--font-mono); font-size:12px; font-weight:700; color:#34d399;">8%</span>
+              </div>
+            </td>
+            <td><span class="viol-pass">ETF ✓</span></td>
+            <td><span class="viol-pass">Pass</span></td>
+            <td style="font-size:12px; color:var(--text-secondary);">Defensive. Near-zero rate sensitivity. Good complement to growth holdings.</td>
+          </tr>
+          <tr class="row-violation">
+            <td><span class="ticker-badge" style="background:#3b1010; color:#f87171; border-color:rgba(248,113,113,0.4);">AVGO</span></td>
+            <td style="color:var(--text-secondary); font-size:12px;">Broadcom Inc.</td>
+            <td>
+              <div style="display:flex; align-items:center; gap:8px;">
+                <div style="width:70px; height:7px; background:var(--border); border-radius:4px; overflow:hidden;">
+                  <div style="width:4%; height:100%; background:#f87171; border-radius:4px;"></div>
+                </div>
+                <span style="font-family:var(--font-mono); font-size:12px; font-weight:700; color:#f87171;">4%</span>
+              </div>
+            </td>
+            <td><span class="viol-hard">Stock ✗</span></td>
+            <td><span class="viol-hard">Violates</span></td>
+            <td style="font-size:12px; color:#f87171; font-weight:600;">Single stock. Profile: ETFs only. Also redundant — AVGO is already inside VTI, XLK, and QUAL.</td>
+          </tr>
+          <tr class="row-violation">
+            <td><span class="ticker-badge" style="background:#3b1010; color:#f87171; border-color:rgba(248,113,113,0.4);">VRT</span></td>
+            <td style="color:var(--text-secondary); font-size:12px;">Vertiv Holdings Co.</td>
+            <td>
+              <div style="display:flex; align-items:center; gap:8px;">
+                <div style="width:70px; height:7px; background:var(--border); border-radius:4px; overflow:hidden;">
+                  <div style="width:3%; height:100%; background:#f87171; border-radius:4px;"></div>
+                </div>
+                <span style="font-family:var(--font-mono); font-size:12px; font-weight:700; color:#f87171;">3%</span>
+              </div>
+            </td>
+            <td><span class="viol-hard">Stock ✗</span></td>
+            <td><span class="viol-hard">Violates</span></td>
+            <td style="font-size:12px; color:#f87171; font-weight:600;">Single stock. Profile: ETFs only. Too small (3%) to move the needle; takes a position slot that could be used for inflation coverage.</td>
+          </tr>
+          <tr class="row-violation">
+            <td><span class="ticker-badge" style="background:#3b1010; color:#f87171; border-color:rgba(248,113,113,0.4);">AMZN</span></td>
+            <td style="color:var(--text-secondary); font-size:12px;">Amazon.com Inc.</td>
+            <td>
+              <div style="display:flex; align-items:center; gap:8px;">
+                <div style="width:70px; height:7px; background:var(--border); border-radius:4px; overflow:hidden;">
+                  <div style="width:2%; height:100%; background:#f87171; border-radius:4px;"></div>
+                </div>
+                <span style="font-family:var(--font-mono); font-size:12px; font-weight:700; color:#f87171;">2%</span>
+              </div>
+            </td>
+            <td><span class="viol-hard">Stock ✗</span></td>
+            <td><span class="viol-hard">Violates</span></td>
+            <td style="font-size:12px; color:#f87171; font-weight:600;">Single stock. Profile: ETFs only. AMZN is already VTI's 3rd largest holding. Zero incremental diversification.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ── Section 2: Constraint Violation Audit ─────────────── -->
+  <section class="report-section">
+    <div class="section-header">
+      <div class="section-number">02</div>
+      <div>
+        <h2 class="section-title">Constraint Violation Audit</h2>
+        <p class="section-sub">Profile compliance check — 3 hard violations, 2 belief gaps</p>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="audit-row">
+        <div>
+          <div class="audit-label">Position Count</div>
+          <div style="font-family:var(--font-mono); font-size:20px; font-weight:900; color:#f87171; margin-top:6px;">10 / 7</div>
+        </div>
+        <div class="audit-desc">
+          Portfolio holds <strong>10 positions</strong> vs the profile's hard ceiling of <strong>max 7</strong>. Three positions must be eliminated or consolidated. The three single stocks (AVGO, VRT, AMZN) are the obvious candidates — removing them drops the count to 7 and simultaneously resolves the ETF-only constraint. Alternatively, QUAL could be merged into VTI (significant overlap) to free a slot for inflation coverage.
+        </div>
+        <div class="audit-status"><span class="viol-hard">HARD VIOLATION</span></div>
+      </div>
+      <div class="audit-row">
+        <div>
+          <div class="audit-label">ETFs Only</div>
+          <div style="font-family:var(--font-mono); font-size:20px; font-weight:900; color:#f87171; margin-top:6px;">3 Stocks</div>
+        </div>
+        <div class="audit-desc">
+          <strong>AVGO, VRT, and AMZN</strong> are individual equities. The profile explicitly states "prefer ETFs over individual stocks." Beyond the preference violation, these three positions add minimal incremental value: AMZN is already VTI's top-5 holding, AVGO is inside VTI/XLK/QUAL, and VRT at 3% is too small to contribute meaningfully. They consume position slots without delivering differentiated exposure.
+        </div>
+        <div class="audit-status"><span class="viol-hard">HARD VIOLATION</span></div>
+      </div>
+      <div class="audit-row">
+        <div>
+          <div class="audit-label">Inflation Hedge</div>
+          <div style="font-family:var(--font-mono); font-size:20px; font-weight:900; color:#f87171; margin-top:6px;">0%</div>
+        </div>
+        <div class="audit-desc">
+          Profile Belief 1 is "inflation will remain elevated." The portfolio holds <strong>zero</strong> inflation-hedging instruments — no TIPS, no gold, no commodity ETF. Worse, BNDW (16%) is a long-duration nominal bond fund that actively loses value in elevated-inflation / higher-rate environments. This is the most significant belief-to-holdings contradiction in the portfolio.
+        </div>
+        <div class="audit-status"><span class="viol-hard">BELIEF GAP ✗</span></div>
+      </div>
+      <div class="audit-row">
+        <div>
+          <div class="audit-label">Commodities</div>
+          <div style="font-family:var(--font-mono); font-size:20px; font-weight:900; color:#f87171; margin-top:6px;">0%</div>
+        </div>
+        <div class="audit-desc">
+          Profile Belief 4 is "commodities will benefit from global demand." The portfolio holds <strong>zero</strong> commodity exposure. No PDBC, no GSG, no DBC, no energy ETF. This belief is completely unexpressed in the portfolio. Given the constraint of 7 positions, adding a commodity ETF requires removing an existing position.
+        </div>
+        <div class="audit-status"><span class="viol-hard">BELIEF GAP ✗</span></div>
+      </div>
+      <div class="audit-row">
+        <div>
+          <div class="audit-label">Rates Duration</div>
+          <div style="font-family:var(--font-mono); font-size:20px; font-weight:900; color:#fbbf24; margin-top:6px;">BNDW ✗</div>
+        </div>
+        <div class="audit-desc">
+          Profile Belief 3 is "interest rates may stay higher for longer." BNDW holds ~50% long-duration bonds (AGG equivalent + international bonds). In a sustained high-rate environment, BNDW is a portfolio drag. The correct instrument for this belief is <strong>VTIP</strong> (short-duration TIPS) or <strong>SGOV/BIL</strong> (T-Bills) — both preserve income while eliminating duration risk.
+        </div>
+        <div class="audit-status"><span class="viol-soft">BELIEF CONFLICT</span></div>
+      </div>
+      <div class="audit-row" style="border-bottom:none;">
+        <div>
+          <div class="audit-label">Maintenance</div>
+          <div style="font-family:var(--font-mono); font-size:20px; font-weight:900; color:#34d399; margin-top:6px;">Pass ~</div>
+        </div>
+        <div class="audit-desc">
+          Low maintenance / low rebalancing is achievable with this portfolio's ETF core. However, the presence of three single stocks increases monitoring burden (earnings risk, analyst day events, sector news). Removing them improves profile compliance on this dimension too.
+        </div>
+        <div class="audit-status"><span class="viol-soft">MINOR ISSUE</span></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── Section 3: Effective Exposure ─────────────────────── -->
+  <section class="report-section">
+    <div class="section-header">
+      <div class="section-number">03</div>
+      <div>
+        <h2 class="section-title">Effective Exposure</h2>
+        <p class="section-sub">Look-through allocation — the real factor bets being made</p>
+      </div>
+    </div>
+
+    <div class="card">
+      <p style="font-size:13px; color:var(--text-secondary); margin-bottom:20px; line-height:1.6;">
+        After look-through of VTI, XLK, QUAL, and VXUS, the effective technology exposure is <strong style="color:#f87171;">~36%</strong> — far higher than the declared 11% XLK allocation implies. This is the most dangerous concentration in the portfolio. Meanwhile, inflation-related assets are <strong style="color:#f87171;">0%</strong>.
+      </p>
+
+      <div style="display:flex; flex-direction:column; gap:10px;">
+        <div style="display:flex; align-items:center; gap:12px;">
+          <div style="width:200px; font-size:13px; color:var(--text-secondary); flex-shrink:0;">Technology (effective)</div>
+          <div style="flex:1; height:10px; background:var(--border); border-radius:5px; overflow:hidden;">
+            <div style="width:36%; height:100%; background:#f87171; border-radius:5px;"></div>
+          </div>
+          <div style="width:50px; text-align:right; font-family:var(--font-mono); font-size:12px; font-weight:600; color:#f87171;">~36%</div>
+        </div>
+        <div style="display:flex; align-items:center; gap:12px;">
+          <div style="width:200px; font-size:13px; color:var(--text-secondary); flex-shrink:0;">Broad US Equities</div>
+          <div style="flex:1; height:10px; background:var(--border); border-radius:5px; overflow:hidden;">
+            <div style="width:27%; height:100%; background:#6c8aff; border-radius:5px;"></div>
+          </div>
+          <div style="width:50px; text-align:right; font-family:var(--font-mono); font-size:12px; font-weight:600; color:#6c8aff;">~27%</div>
+        </div>
+        <div style="display:flex; align-items:center; gap:12px;">
+          <div style="width:200px; font-size:13px; color:var(--text-secondary); flex-shrink:0;">Global Bonds (BNDW)</div>
+          <div style="flex:1; height:10px; background:var(--border); border-radius:5px; overflow:hidden;">
+            <div style="width:16%; height:100%; background:#f87171; border-radius:5px; opacity:0.7;"></div>
+          </div>
+          <div style="width:50px; text-align:right; font-family:var(--font-mono); font-size:12px; font-weight:600; color:#f87171;">16%</div>
+        </div>
+        <div style="display:flex; align-items:center; gap:12px;">
+          <div style="width:200px; font-size:13px; color:var(--text-secondary); flex-shrink:0;">International Equities</div>
+          <div style="flex:1; height:10px; background:var(--border); border-radius:5px; overflow:hidden;">
+            <div style="width:15%; height:100%; background:#a78bfa; border-radius:5px;"></div>
+          </div>
+          <div style="width:50px; text-align:right; font-family:var(--font-mono); font-size:12px; font-weight:600; color:#a78bfa;">15%</div>
+        </div>
+        <div style="display:flex; align-items:center; gap:12px;">
+          <div style="width:200px; font-size:13px; color:var(--text-secondary); flex-shrink:0;">Income (SCHD)</div>
+          <div style="flex:1; height:10px; background:var(--border); border-radius:5px; overflow:hidden;">
+            <div style="width:10%; height:100%; background:#fbbf24; border-radius:5px;"></div>
+          </div>
+          <div style="width:50px; text-align:right; font-family:var(--font-mono); font-size:12px; font-weight:600; color:#fbbf24;">10%</div>
+        </div>
+        <div style="display:flex; align-items:center; gap:12px;">
+          <div style="width:200px; font-size:13px; color:var(--text-secondary); flex-shrink:0;">Healthcare (XLV)</div>
+          <div style="flex:1; height:10px; background:var(--border); border-radius:5px; overflow:hidden;">
+            <div style="width:8%; height:100%; background:#34d399; border-radius:5px;"></div>
+          </div>
+          <div style="width:50px; text-align:right; font-family:var(--font-mono); font-size:12px; font-weight:600; color:#34d399;">8%</div>
+        </div>
+        <div style="display:flex; align-items:center; gap:12px;">
+          <div style="width:200px; font-size:13px; color:var(--text-secondary); flex-shrink:0;">Inflation / Real Assets</div>
+          <div style="flex:1; height:10px; background:var(--border); border-radius:5px; overflow:hidden;">
+            <div style="width:0%; height:100%; background:#f59e0b; border-radius:5px;"></div>
+          </div>
+          <div style="width:50px; text-align:right; font-family:var(--font-mono); font-size:12px; font-weight:600; color:#f87171;">0%</div>
+        </div>
+      </div>
+
+      <div style="margin-top:18px; padding:14px; background:#3b1010; border:1px solid rgba(248,113,113,0.25); border-radius:var(--radius-sm);">
+        <p style="font-size:13px; color:#fca5a5; margin:0; line-height:1.7;">
+          ⚠️ <strong>Critical hidden concentration:</strong> A self-described "balanced moderate" portfolio has ~36% effective technology exposure and <strong>zero inflation protection</strong>. In a tech-sector drawdown scenario (2022 analog), this portfolio has no real counterweight. The stated belief in elevated inflation is completely unhedged.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── Section 4: Overlap & Correlation ──────────────────── -->
+  <section class="report-section">
+    <div class="section-header">
+      <div class="section-number">04</div>
+      <div>
+        <h2 class="section-title">Overlap & Correlation</h2>
+        <p class="section-sub">Pairwise redundancies — three-way tech overlap is the primary issue</p>
+      </div>
+    </div>
+
+    <div class="card">
+      <table class="hold-tbl">
+        <thead>
+          <tr>
+            <th>Pair</th>
+            <th>Corr (approx)</th>
+            <th>Holding Overlap</th>
+            <th>Verdict</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr class="row-violation">
+            <td><span class="ticker-badge">VTI</span> vs <span class="ticker-badge">XLK</span> vs <span class="ticker-badge">QUAL</span></td>
+            <td><span class="corr-pill corr-high">0.91–0.94</span></td>
+            <td style="font-size:12px; color:var(--text-secondary);">AAPL, MSFT, NVDA appear in top-5 of all three. ~30–35% shared holdings.</td>
+            <td style="font-size:12px; color:#f87171; font-weight:600;">CRITICAL — Three-way tech overlap creates ~36% effective tech exposure. One of these must go.</td>
+          </tr>
+          <tr>
+            <td><span class="ticker-badge">VTI</span> vs <span class="ticker-badge">AMZN</span></td>
+            <td><span class="corr-pill corr-high">0.88</span></td>
+            <td style="font-size:12px; color:var(--text-secondary);">AMZN is top-3 holding inside VTI.</td>
+            <td style="font-size:12px; color:#f87171;">Pure redundancy. Remove AMZN — it's already in the portfolio at significant weight via VTI.</td>
+          </tr>
+          <tr>
+            <td><span class="ticker-badge">VTI</span> vs <span class="ticker-badge">AVGO</span></td>
+            <td><span class="corr-pill corr-high">0.84</span></td>
+            <td style="font-size:12px; color:var(--text-secondary);">AVGO inside VTI, XLK, and QUAL top holdings.</td>
+            <td style="font-size:12px; color:#f87171;">Triple-counted. AVGO buying adds concentration, not diversification.</td>
+          </tr>
+          <tr>
+            <td><span class="ticker-badge">VTI</span> vs <span class="ticker-badge">VXUS</span></td>
+            <td><span class="corr-pill corr-med">0.74</span></td>
+            <td style="font-size:12px; color:var(--text-secondary);">Global equity co-movement.</td>
+            <td style="font-size:12px; color:var(--yellow-text);">Expected overlap. VXUS earns its slot via geographic/currency diversification.</td>
+          </tr>
+          <tr>
+            <td><span class="ticker-badge">VTI</span> vs <span class="ticker-badge">SCHD</span></td>
+            <td><span class="corr-pill corr-high">0.87</span></td>
+            <td style="font-size:12px; color:var(--text-secondary);">Dividend names within VTI.</td>
+            <td style="font-size:12px; color:var(--text-secondary);">Acceptable — SCHD adds income/value factor not replicated by VTI alone. Distinct return profile.</td>
+          </tr>
+          <tr>
+            <td><span class="ticker-badge">BNDW</span> vs <span style="color:var(--text-primary); font-size:12px;">rate environment</span></td>
+            <td><span class="corr-pill corr-high">–0.72 to bonds</span></td>
+            <td style="font-size:12px; color:var(--text-secondary);">Duration vs rate sensitivity.</td>
+            <td style="font-size:12px; color:#f87171; font-weight:600;">Inverse relationship: when rates rise, BNDW falls. This is the core belief-vs-holdings contradiction.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ── Section 5: Belief-Alignment Matrix ────────────────── -->
+  <section class="report-section">
+    <div class="section-header">
+      <div class="section-number">05</div>
+      <div>
+        <h2 class="section-title">Belief-to-Holdings Alignment Matrix</h2>
+        <p class="section-sub">Are the stated macro views actually expressed in the portfolio?</p>
+      </div>
+    </div>
+
+    <div class="card">
+      <table class="belief-matrix">
+        <thead>
+          <tr>
+            <th>Macro Belief</th>
+            <th>Required Exposure</th>
+            <th>Current Holding(s)</th>
+            <th>Coverage</th>
+            <th>Gap / Conflict</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>
+              <div class="belief-name">🔥 Inflation elevated</div>
+              <div class="belief-sub">Belief #1 — highest stated conviction</div>
+            </td>
+            <td style="font-size:12px; color:var(--text-secondary);">TIPS ETF, gold, or broad commodity basket</td>
+            <td style="font-size:12px; color:#f87171; font-weight:600;">None</td>
+            <td><span class="viol-hard">0% Coverage</span></td>
+            <td style="font-size:12px; color:#f87171;">Completely unhedged. BNDW actively works against this belief — nominal bond returns erode in inflation.</td>
+          </tr>
+          <tr>
+            <td>
+              <div class="belief-name">💻 Tech leads innovation</div>
+              <div class="belief-sub">Belief #2 — growth conviction</div>
+            </td>
+            <td style="font-size:12px; color:var(--text-secondary);">Tech-tilted ETF (XLK, QQQ, VGT)</td>
+            <td style="font-size:12px; color:var(--green-text); font-weight:600;">XLK + VTI + QUAL</td>
+            <td><span class="viol-pass">✓ Expressed</span></td>
+            <td style="font-size:12px; color:var(--yellow-text);">Over-expressed — ~36% effective tech is too high for a "moderate" profile. Belief expressed but overshooting the risk level.</td>
+          </tr>
+          <tr>
+            <td>
+              <div class="belief-name">📈 Rates higher for longer</div>
+              <div class="belief-sub">Belief #3 — rate environment</div>
+            </td>
+            <td style="font-size:12px; color:var(--text-secondary);">Short-duration or no bonds. VTIP, SGOV, or cash.</td>
+            <td style="font-size:12px; color:#f87171; font-weight:600;">BNDW 16% (opposite!)</td>
+            <td><span class="viol-hard">Contradicted</span></td>
+            <td style="font-size:12px; color:#f87171;">BNDW is long-duration nominal bonds. This belief directly calls for eliminating or replacing BNDW with a short-duration alternative.</td>
+          </tr>
+          <tr>
+            <td>
+              <div class="belief-name">🌍 Commodities benefit</div>
+              <div class="belief-sub">Belief #4 — real asset conviction</div>
+            </td>
+            <td style="font-size:12px; color:var(--text-secondary);">PDBC, DBC, GSG, or energy ETF</td>
+            <td style="font-size:12px; color:#f87171; font-weight:600;">None</td>
+            <td><span class="viol-hard">0% Coverage</span></td>
+            <td style="font-size:12px; color:#f87171;">Completely absent. Not a single dollar allocated to the commodity thesis. Requires a new position (constrained by 7-position limit).</td>
+          </tr>
+        </tbody>
+      </table>
+      <div style="margin-top:16px; padding:14px; background:#3b1010; border:1px solid rgba(248,113,113,0.3); border-radius:var(--radius-sm);">
+        <p style="font-size:13px; color:#fca5a5; margin:0; line-height:1.7;">
+          ⚠️ <strong>Summary: 2 of 4 macro beliefs are unaddressed. 1 belief (rates) is actively contradicted.</strong> The IRA portfolio is not aligned with the declared investor profile. A re-build or material restructuring against the profile is needed — the /optimize report will detail the specific changes.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── Section 6: Failure Modes ──────────────────────────── -->
+  <section class="report-section">
+    <div class="section-header">
+      <div class="section-number">06</div>
+      <div>
+        <h2 class="section-title">Failure Mode Analysis</h2>
+        <p class="section-sub">The four scenarios most likely to expose structural weaknesses</p>
+      </div>
+    </div>
+
+    <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px;">
+
+      <div class="card" style="border-color:rgba(248,113,113,0.4);">
+        <div style="display:flex; align-items:center; gap:10px; margin-bottom:10px;">
+          <div style="width:32px; height:32px; border-radius:8px; background:#3b1010; display:flex; align-items:center; justify-content:center; font-size:15px;">🔥</div>
+          <div>
+            <div style="font-weight:600; font-size:14px;">Stagflation (Primary Belief Scenario)</div>
+            <span class="viol-hard" style="font-size:11px; padding:2px 8px;">CRITICAL EXPOSURE</span>
+          </div>
+        </div>
+        <div style="font-size:13px; color:var(--text-secondary); line-height:1.6; margin-bottom:12px;">
+          User believes in elevated inflation and higher rates — both stagflation characteristics. In this regime: BNDW loses 15–20%, equities struggle, tech underperforms. The portfolio has <strong>zero</strong> stagflation defenses (no TIPS, no gold, no commodities). This is the scenario the user is most concerned about — and least defended against.
+        </div>
+        <div style="padding:8px 10px; background:var(--bg-card-alt); border-radius:var(--radius-sm); font-family:var(--font-mono); font-size:12px; display:flex; justify-content:space-between;">
+          <span style="color:var(--text-muted);">Est. portfolio loss</span>
+          <span style="color:#f87171; font-weight:700;">–30 to –40%</span>
+        </div>
+      </div>
+
+      <div class="card" style="border-color:rgba(248,113,113,0.4);">
+        <div style="display:flex; align-items:center; gap:10px; margin-bottom:10px;">
+          <div style="width:32px; height:32px; border-radius:8px; background:#3b1010; display:flex; align-items:center; justify-content:center; font-size:15px;">💻</div>
+          <div>
+            <div style="font-weight:600; font-size:14px;">Tech Sector Drawdown</div>
+            <span class="viol-hard" style="font-size:11px; padding:2px 8px;">HIGH RISK</span>
+          </div>
+        </div>
+        <div style="font-size:13px; color:var(--text-secondary); line-height:1.6; margin-bottom:12px;">
+          ~36% effective tech exposure means a 2022-style tech bear market (Nasdaq –33%) translates to roughly –12% on tech contribution alone, before other holdings move. BNDW provides minimal cushion in rate-shock tech drawdowns (both moved in the same direction in 2022).
+        </div>
+        <div style="padding:8px 10px; background:var(--bg-card-alt); border-radius:var(--radius-sm); font-family:var(--font-mono); font-size:12px; display:flex; justify-content:space-between;">
+          <span style="color:var(--text-muted);">2022 analog loss</span>
+          <span style="color:#f87171; font-weight:700;">–28 to –35%</span>
+        </div>
+      </div>
+
+      <div class="card" style="border-color:rgba(251,191,36,0.3);">
+        <div style="display:flex; align-items:center; gap:10px; margin-bottom:10px;">
+          <div style="width:32px; height:32px; border-radius:8px; background:#3d2c05; display:flex; align-items:center; justify-content:center; font-size:15px;">📈</div>
+          <div>
+            <div style="font-weight:600; font-size:14px;">Rate Spike (Sudden)</div>
+            <span class="viol-soft" style="font-size:11px; padding:2px 8px;">SIGNIFICANT</span>
+          </div>
+        </div>
+        <div style="font-size:13px; color:var(--text-secondary); line-height:1.6; margin-bottom:12px;">
+          A sudden 1% rate rise causes BNDW's long-duration segment to lose ~8–10%. 16% weight × –9% = –1.4% direct drag at the portfolio level. Compounded with the equity impact of a rate spike, total portfolio impact could be –12 to –18%.
+        </div>
+        <div style="padding:8px 10px; background:var(--bg-card-alt); border-radius:var(--radius-sm); font-family:var(--font-mono); font-size:12px; display:flex; justify-content:space-between;">
+          <span style="color:var(--text-muted);">Est. drawdown</span>
+          <span style="color:var(--yellow); font-weight:700;">–12 to –18%</span>
+        </div>
+      </div>
+
+      <div class="card" style="border-color:rgba(52,211,153,0.2);">
+        <div style="display:flex; align-items:center; gap:10px; margin-bottom:10px;">
+          <div style="width:32px; height:32px; border-radius:8px; background:#0d3326; display:flex; align-items:center; justify-content:center; font-size:15px;">🚀</div>
+          <div>
+            <div style="font-weight:600; font-size:14px;">Bull / Tech Rally</div>
+            <span class="viol-pass" style="font-size:11px; padding:2px 8px;">WELL COVERED</span>
+          </div>
+        </div>
+        <div style="font-size:13px; color:var(--text-secondary); line-height:1.6; margin-bottom:12px;">
+          The one regime this portfolio is genuinely built for. ~36% tech + quality growth + VTI core performs excellently in low-rate risk-on environments. This strength is real — but it is achieved via concentration that contradicts the "moderate" risk profile.
+        </div>
+        <div style="padding:8px 10px; background:var(--bg-card-alt); border-radius:var(--radius-sm); font-family:var(--font-mono); font-size:12px; display:flex; justify-content:space-between;">
+          <span style="color:var(--text-muted);">Est. upside</span>
+          <span style="color:var(--green); font-weight:700;">+25 to +40% annually</span>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ── Section 7: Stress Tests ───────────────────────────── -->
+  <section class="report-section">
+    <div class="section-header">
+      <div class="section-number">07</div>
+      <div>
+        <h2 class="section-title">Historical Stress Tests</h2>
+        <p class="section-sub">Modeled against five major market regimes</p>
+      </div>
+    </div>
+
+    <div class="card">
+      <table class="stress-tbl">
+        <thead>
+          <tr>
+            <th>Regime</th>
+            <th>Period</th>
+            <th>Est. Drawdown</th>
+            <th>Why</th>
+            <th>What Helped</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td style="font-weight:600;">Dot-Com Bust</td>
+            <td style="color:var(--text-secondary); font-size:12px;">2000–2002</td>
+            <td>
+              <div class="draw-bar">
+                <div class="draw-fill" style="width:50%"></div>
+                <span class="draw-lbl">–40 to –50%</span>
+              </div>
+            </td>
+            <td style="font-size:12px; color:var(--text-secondary);">XLK –80% analog. ~36% effective tech exposure is devastating. VTI/VXUS also fall hard. BNDW would have helped here (low rates = bond gains).</td>
+            <td style="font-size:12px; color:var(--green-text);">BNDW, SCHD, XLV</td>
+          </tr>
+          <tr style="background:rgba(248,113,113,0.04);">
+            <td style="font-weight:600;">2022 Rate + Tech Shock</td>
+            <td style="color:var(--text-secondary); font-size:12px;">Jan–Oct 2022</td>
+            <td>
+              <div class="draw-bar">
+                <div class="draw-fill" style="width:37%"></div>
+                <span class="draw-lbl">–30 to –38%</span>
+              </div>
+            </td>
+            <td style="font-size:12px; color:#f87171; font-weight:600;">THE WORST CASE for this portfolio. XLK –35%, BNDW –18%, VTI –20%. No offsetting positions. This is the user's own stated belief environment — and the portfolio has no defense.</td>
+            <td style="font-size:12px; color:var(--text-secondary);">SCHD (+4%) only</td>
+          </tr>
+          <tr>
+            <td style="font-weight:600;">GFC</td>
+            <td style="color:var(--text-secondary); font-size:12px;">2008–2009</td>
+            <td>
+              <div class="draw-bar">
+                <div class="draw-fill" style="width:35%"></div>
+                <span class="draw-lbl">–32 to –40%</span>
+              </div>
+            </td>
+            <td style="font-size:12px; color:var(--text-secondary);">Systemic equity selloff. BNDW gains partially offset. VXUS especially painful (EM contagion). XLV holds up modestly.</td>
+            <td style="font-size:12px; color:var(--green-text);">BNDW (flight to safety), XLV, SCHD</td>
+          </tr>
+          <tr>
+            <td style="font-weight:600;">COVID Crash</td>
+            <td style="color:var(--text-secondary); font-size:12px;">Feb–Mar 2020</td>
+            <td>
+              <div class="draw-bar">
+                <div class="draw-fill" style="width:28%"></div>
+                <span class="draw-lbl">–24 to –30%</span>
+              </div>
+            </td>
+            <td style="font-size:12px; color:var(--text-secondary);">Broad equity selloff. However, XLK and tech recovered fastest. Portfolio would have recovered quickly (by Aug 2020).</td>
+            <td style="font-size:12px; color:var(--green-text);">BNDW (bonds rallied), XLK recovery speed</td>
+          </tr>
+          <tr>
+            <td style="font-weight:600;">Bull / Risk-On</td>
+            <td style="color:var(--text-secondary); font-size:12px;">2023–2025</td>
+            <td>
+              <div class="draw-bar">
+                <div class="draw-fill" style="width:0%; background:var(--green)"></div>
+                <span class="draw-lbl ok">+40 to +60%</span>
+              </div>
+            </td>
+            <td style="font-size:12px; color:var(--text-secondary);">Tech-heavy portfolio shines. VTI, XLK, QUAL, AMZN, AVGO all strong. High-growth regime is this portfolio's element.</td>
+            <td style="font-size:12px; color:var(--green-text);">All equity positions — portfolio outperforms</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ── Section 8: Key Findings ───────────────────────────── -->
+  <section class="report-section">
+    <div class="section-header">
+      <div class="section-number">08</div>
+      <div>
+        <h2 class="section-title">Key Findings</h2>
+        <p class="section-sub">Ranked by severity — profile-aware</p>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="finding-row">
+        <div><span class="viol-hard">Critical</span></div>
+        <div>
+          <div class="finding-title" style="color:var(--text-primary);">10 positions violates the 7-position constraint — must reduce by 3</div>
+          <div class="finding-body">The profile is unambiguous: maximum 7 positions. The current portfolio is 43% over limit. The three single stocks (AVGO 4%, VRT 3%, AMZN 2%) are the natural candidates for elimination — they sum to 9%, are all ETF-constraint violations, and are substantially duplicated inside existing ETFs. Removing them simultaneously resolves the position count and the ETF-only violations.</div>
+        </div>
+      </div>
+      <div class="finding-row">
+        <div><span class="viol-hard">Critical</span></div>
+        <div>
+          <div class="finding-title" style="color:var(--text-primary);">BNDW (16%) directly contradicts the "rates higher for longer" belief</div>
+          <div class="finding-body">This is the core structural contradiction. The user believes rates will remain elevated, yet 16% of the portfolio is in a long-duration global bond fund that loses value in rising-rate environments. BNDW's 2022 performance was –18%. The correct replacement is VTIP (short-duration TIPS) — it satisfies the income objective while hedging both inflation and rate risk simultaneously. This is a must-change item.</div>
+        </div>
+      </div>
+      <div class="finding-row">
+        <div><span class="viol-hard">Critical</span></div>
+        <div>
+          <div class="finding-title" style="color:var(--text-primary);">Zero inflation or commodity coverage — 2 of 4 beliefs completely unaddressed</div>
+          <div class="finding-body">Beliefs #1 (inflation elevated) and #4 (commodities benefit) represent the user's macro conviction about the real economy — yet the portfolio holds no TIPS, no gold, no commodity ETF of any kind. Freed up by removing the three single stocks and replacing BNDW, two new positions (e.g. VTIP + IAU or PDBC) would close both gaps within the 7-position constraint.</div>
+        </div>
+      </div>
+      <div class="finding-row">
+        <div><span class="viol-soft">Warning</span></div>
+        <div>
+          <div class="finding-title" style="color:var(--text-primary);">~36% effective tech exposure contradicts "moderate" risk tolerance</div>
+          <div class="finding-body">VTI (28% tech look-through) + XLK (11% direct) + QUAL (top holdings are large-cap tech) creates a three-way overlap. A "moderate" investor should not have 36% bet on a single sector. Eliminating either XLK or QUAL — keeping the other — would bring effective tech down to ~25%, more appropriate for the stated risk level. The tech belief is expressed, just over-expressed.</div>
+        </div>
+      </div>
+      <div class="finding-row">
+        <div><span class="viol-soft">Warning</span></div>
+        <div>
+          <div class="finding-title" style="color:var(--text-primary);">AMZN and AVGO are triple-counted — zero incremental value</div>
+          <div class="finding-body">AMZN is already a top-5 holding in VTI. AVGO is a top holding in both XLK and QUAL. Buying them separately as single stocks adds position count, compliance violations, and monitoring overhead without adding any exposure that isn't already present. These are textbook examples of cosmetic diversification that actually increases concentration.</div>
+        </div>
+      </div>
+      <div class="finding-row">
+        <div><span class="viol-info">Info</span></div>
+        <div>
+          <div class="finding-title" style="color:var(--text-primary);">VXUS at 15% is on the high side given the declared tech belief</div>
+          <div class="finding-body">International equities trail US tech leadership in most tech-outperformance regimes. At 15%, VXUS is the second-largest holding. Trimming to 8–10% would free allocation for the missing inflation/commodity positions, while still maintaining geographic diversification.</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── Section 9: Scorecard ──────────────────────────────── -->
+  <section class="report-section">
+    <div class="section-header">
+      <div class="section-number">09</div>
+      <div>
+        <h2 class="section-title">Diagnostic Scorecard</h2>
+        <p class="section-sub">Profile-aware assessment — evaluated against stated constraints and beliefs</p>
+      </div>
+    </div>
+
+    <div class="overall-grade-card" style="margin-bottom:24px; border-color:rgba(251,191,36,0.3);">
+      <div class="overall-grade-letter" style="color:#fbbf24; text-shadow:0 0 40px rgba(251,191,36,0.3);">D+</div>
+      <div>
+        <h3 style="font-size:20px; font-weight:700; margin-bottom:8px;">Portfolio Does Not Conform to Its Own Investment Profile</h3>
+        <p style="font-size:14px; color:var(--text-secondary); line-height:1.7;">Three hard constraint violations (10 positions, 3 single stocks), one belief directly contradicted (BNDW vs rates), and two beliefs completely absent (inflation, commodities). The IRA portfolio is well-suited for a bull/risk-on environment but is not the "moderate balanced" portfolio described in the profile. Structural rebuild required — the /optimize report will prescribe the exact changes to bring this portfolio into full profile compliance.</p>
+      </div>
+    </div>
+
+    <div class="scan-scorecard">
+      <div class="score-item">
+        <div class="score-label">Profile Compliance</div>
+        <div class="score-grade grade-d">F</div>
+        <div class="score-sub">3 hard violations · 2 belief gaps</div>
+      </div>
+      <div class="score-item">
+        <div class="score-label">Diversification</div>
+        <div class="score-grade grade-c">C–</div>
+        <div class="score-sub">~36% tech · 0% real assets</div>
+      </div>
+      <div class="score-item">
+        <div class="score-label">Inflation Defense</div>
+        <div class="score-grade grade-d">D</div>
+        <div class="score-sub">0% coverage · BNDW works against it</div>
+      </div>
+      <div class="score-item">
+        <div class="score-label">Rate Environment Fit</div>
+        <div class="score-grade grade-d">D</div>
+        <div class="score-sub">BNDW directly contradicts belief</div>
+      </div>
+      <div class="score-item">
+        <div class="score-label">Bull Market Upside</div>
+        <div class="score-grade grade-a">A</div>
+        <div class="score-sub">Tech concentration excels here</div>
+      </div>
+    </div>
+
+    <div style="margin-top:20px; padding:16px; background:var(--bg-card-alt); border-radius:var(--radius-md); border:1px solid var(--border);">
+      <p style="font-size:13px; color:var(--text-secondary); margin:0; line-height:1.7;">
+        <strong style="color:var(--text-primary);">Next step: /optimize</strong> — The optimization pass will map the exact trades to bring this portfolio from its current state to a 7-position, ETF-only, profile-compliant allocation. Expected moves: remove AVGO/VRT/AMZN, replace BNDW with VTIP, add IAU or PDBC for commodity/inflation coverage, reduce VXUS from 15% to ~8%, decide between XLK and QUAL.
+      </p>
+    </div>
+  </section>
+
+  <!-- ── Footer ────────────────────────────────────────────── -->
+  <footer class="page-footer">
+    <div class="footer-text">Portfolio Intelligence · IRA Portfolio Profile-Aware Scan · Feb 22, 2026</div>
+    <div class="footer-disclaimer">For informational purposes only. Not financial advice. All projected drawdown figures are estimates based on historical analog scenarios and are not guarantees of future performance. Correlation estimates are approximations derived from publicly available historical return data.</div>
+  </footer>
+
+</div><!-- /page-wrapper -->
+
+<script>
+  function exportPDF() {
+    window.print();
+  }
+</script>
+</body>
+</html>
