@@ -1,0 +1,742 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>IRA Portfolio — /summarize</title>
+  <link rel="stylesheet" href="portfolio.css" />
+  <style>
+    :root {
+      --sum-accent: #34d399;
+      --sum-accent-dim: #0d3326;
+    }
+    .cmd-chip { background: var(--sum-accent-dim); color: var(--sum-accent); border-color: rgba(52,211,153,0.25); }
+
+    /* ── Journey timeline ── */
+    .journey {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 1px;
+      background: var(--border);
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+      margin-bottom: 32px;
+    }
+    .journey-step { background: #141824; padding: 22px 18px; position: relative; }
+    .journey-step::after {
+      content: '→';
+      position: absolute; right: -14px; top: 50%; transform: translateY(-50%);
+      color: var(--text-muted); font-size: 16px; z-index: 2;
+    }
+    .journey-step:last-child::after { display: none; }
+    .journey-num   { font-size: 10px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-muted); margin-bottom: 6px; font-weight: 700; }
+    .journey-title { font-size: 14px; font-weight: 800; color: var(--text-primary); margin-bottom: 6px; }
+    .journey-grade { font-size: 32px; font-weight: 900; line-height: 1; }
+    .journey-sub   { font-size: 11px; color: var(--text-secondary); margin-top: 5px; line-height: 1.5; }
+
+    /* ── Three pillars ── */
+    .pillar-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+    .pillar-card { border-radius: var(--radius-lg); padding: 22px; border: 1px solid; }
+    .pillar-icon { font-size: 24px; margin-bottom: 10px; }
+    .pillar-label { font-size: 10px; text-transform: uppercase; letter-spacing: 0.08em; font-weight: 700; margin-bottom: 8px; }
+    .pillar-title { font-size: 15px; font-weight: 800; margin-bottom: 10px; color: var(--text-primary); }
+    .pillar-list { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 6px; }
+    .pillar-list li { font-size: 12px; color: var(--text-secondary); line-height: 1.5; padding-left: 14px; position: relative; }
+    .pillar-list li::before { content: '·'; position: absolute; left: 0; color: var(--text-muted); }
+
+    /* ── Final portfolio table ── */
+    .final-tbl { width: 100%; border-collapse: collapse; font-size: 13px; }
+    .final-tbl th {
+      text-align: left; padding: 10px 14px; background: var(--bg-card-alt);
+      color: var(--text-secondary); font-size: 11px; text-transform: uppercase;
+      letter-spacing: 0.06em; border-bottom: 1px solid var(--border);
+    }
+    .final-tbl td { padding: 13px 14px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+    .final-tbl tr:last-child td { border-bottom: none; }
+    .final-tbl tr:hover td { background: var(--bg-hover); }
+    .final-tbl tr.new-pos td { background: rgba(52,211,153,0.03); }
+    .final-tbl tr.hedge-pos td { background: rgba(251,191,36,0.03); }
+
+    /* ── Belief badges ── */
+    .belief-b { display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border-radius: 20px; font-size: 11px; font-weight: 600; border: 1px solid; }
+    .b-inflation  { background:#3b1a05; color:#fb923c; border-color:rgba(251,146,60,0.3); }
+    .b-tech       { background:#2d1f5e; color:#a78bfa; border-color:rgba(167,139,250,0.25); }
+    .b-rates      { background:#3d2c05; color:#fbbf24; border-color:rgba(251,191,36,0.3); }
+    .b-commodity  { background:#1a2810; color:#86efac; border-color:rgba(134,239,172,0.25); }
+    .b-income     { background:#0d2545; color:#60a5fa; border-color:rgba(96,165,250,0.25); }
+    .b-defensive  { background:#1a1d27; color:var(--text-muted); border-color:var(--border); }
+    .b-hedge      { background:#3d2c05; color:#fbbf24; border-color:rgba(251,191,36,0.3); }
+
+    /* ── Stress table ── */
+    .stress-tbl { width: 100%; border-collapse: collapse; font-size: 13px; }
+    .stress-tbl th {
+      text-align: left; padding: 10px 12px; background: var(--bg-card-alt);
+      color: var(--text-secondary); font-size: 11px; text-transform: uppercase;
+      letter-spacing: 0.06em; border-bottom: 1px solid var(--border);
+    }
+    .stress-tbl td { padding: 11px 12px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+    .stress-tbl tr:last-child td { border-bottom: none; }
+    .stress-tbl tr:hover td { background: var(--bg-hover); }
+    .draw-bar { display: flex; align-items: center; gap: 8px; }
+    .draw-fill { height: 8px; border-radius: 4px; min-width: 4px; }
+    .draw-lbl  { font-family: var(--font-mono); font-size: 12px; font-weight: 700; }
+
+    /* ── Advisory callouts ── */
+    .advisory-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+    .advisory-cell { padding: 16px 18px; border-radius: var(--radius-md); border: 1px solid; }
+
+    /* ── Watch items ── */
+    .watch-row { display: grid; grid-template-columns: 28px 1fr; gap: 12px; align-items: start; padding: 12px 0; border-bottom: 1px solid var(--border); }
+    .watch-row:last-child { border-bottom: none; }
+    .watch-num { font-family: var(--font-mono); font-size: 11px; font-weight: 700; color: var(--text-muted); padding-top: 2px; }
+
+    /* ── Grade / scorecard ── */
+    .grade-band {
+      background: linear-gradient(135deg, #141824, #1a2130);
+      border: 1px solid rgba(52,211,153,0.2); border-radius: var(--radius-lg);
+      padding: 32px; display: flex; align-items: center; gap: 32px;
+      margin-bottom: 24px;
+    }
+    .grade-letter { font-size: 88px; font-weight: 900; line-height: 1; flex-shrink: 0; }
+    .scan-scorecard { display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; }
+    .score-item { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-md); padding: 16px; text-align: center; }
+    .score-label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-muted); margin-bottom: 8px; }
+    .score-grade { font-size: 26px; font-weight: 800; line-height: 1; margin-bottom: 4px; }
+    .score-sub   { font-size: 11px; color: var(--text-secondary); line-height: 1.4; }
+    .grade-a { color: #34d399; }
+    .grade-b { color: #60a5fa; }
+    .grade-c { color: #fbbf24; }
+    .grade-d { color: #f87171; }
+
+    /* ── Comparison row ── */
+    .cmp-tbl { width: 100%; border-collapse: collapse; font-size: 13px; }
+    .cmp-tbl th {
+      padding: 10px 14px; background: var(--bg-card-alt); color: var(--text-secondary);
+      font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em;
+      border-bottom: 1px solid var(--border); text-align: left;
+    }
+    .cmp-tbl th:not(:first-child) { text-align: center; }
+    .cmp-tbl td { padding: 12px 14px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+    .cmp-tbl td:not(:first-child) { text-align: center; }
+    .cmp-tbl tr:last-child td { border-bottom: none; }
+    .cmp-tbl tr:hover td { background: var(--bg-hover); }
+
+    @media (max-width: 720px) {
+      .journey        { grid-template-columns: 1fr 1fr; }
+      .pillar-grid    { grid-template-columns: 1fr; }
+      .scan-scorecard { grid-template-columns: repeat(3, 1fr); }
+      .advisory-grid  { grid-template-columns: 1fr; }
+      .grade-band     { flex-direction: column; }
+      .grade-letter   { font-size: 64px; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ── Top Bar ─────────────────────────────────────────────── -->
+<nav class="top-bar">
+  <div class="top-bar-inner">
+    <div class="top-bar-brand">
+      <div class="brand-icon">P</div>
+      <span class="brand-name">Portfolio Intelligence</span>
+    </div>
+    <div class="top-bar-meta">
+      <span class="meta-chip">IRA Portfolio</span>
+      <span class="meta-chip">Profile-Aware</span>
+      <span class="meta-chip">Feb 22, 2026</span>
+      <span class="meta-chip cmd-chip">/summarize</span>
+    </div>
+  </div>
+</nav>
+
+<!-- ── Export Button ──────────────────────────────────────── -->
+<button class="pdf-export-btn" onclick="window.print()">
+  <span class="btn-icon">↓</span>
+  <span class="btn-label">Export PDF</span>
+</button>
+
+<div class="page-wrapper">
+
+  <!-- ── Hero ─────────────────────────────────────────────── -->
+  <header class="report-hero">
+    <div class="hero-eyebrow">
+      <span class="badge" style="background:#3b1010; color:#f87171; border:1px solid rgba(248,113,113,0.3);">Started: D+ · 10 positions · 5 violations</span>
+      <span class="badge" style="background:#0d3326; color:#34d399; border:1px solid rgba(52,211,153,0.3);">Final: B · 8 positions · 0 violations</span>
+    </div>
+    <h1 class="hero-title">IRA Portfolio — Executive Summary</h1>
+    <p class="hero-sub">Complete intelligence cycle: scan of original holdings against <strong>profile.txt</strong> constraints → optimization → advisory discussion on BNDW re-entry → final agreed 8-position allocation. Every decision documented.</p>
+  </header>
+
+  <!-- ── Journey Timeline ──────────────────────────────────── -->
+  <section class="report-section">
+    <div class="section-header">
+      <div class="section-number">01</div>
+      <div>
+        <h2 class="section-title">The Journey</h2>
+        <p class="section-sub">Four stages from diagnosis to execution-ready allocation</p>
+      </div>
+    </div>
+
+    <div class="journey">
+      <div class="journey-step">
+        <div class="journey-num">Stage 1 — /scan</div>
+        <div class="journey-title">Original IRA</div>
+        <div class="journey-grade" style="color:#f87171;">D+</div>
+        <div class="journey-sub">10 positions · 3 single stocks · BNDW vs rates belief · 0% inflation coverage</div>
+      </div>
+      <div class="journey-step">
+        <div class="journey-num">Stage 2 — /optimize</div>
+        <div class="journey-title">Profile-Compliant Rebuild</div>
+        <div class="journey-grade" style="color:#a78bfa;">B+</div>
+        <div class="journey-sub">7 positions · ETFs only · all 4 beliefs expressed · BNDW eliminated</div>
+      </div>
+      <div class="journey-step">
+        <div class="journey-num">Stage 3 — Advisory</div>
+        <div class="journey-title">BNDW Re-entry Debate</div>
+        <div class="journey-grade" style="color:#fbbf24;">~</div>
+        <div class="journey-sub">User proposed 8-position with BNDW back · weight conflicts identified · right-sizing worked through</div>
+      </div>
+      <div class="journey-step">
+        <div class="journey-num">Stage 4 — Final</div>
+        <div class="journey-title">Agreed Allocation</div>
+        <div class="journey-grade" style="color:#34d399;">B</div>
+        <div class="journey-sub">8 positions · BNDW as hedge (12%) · VTIP as anchor (12%) · all beliefs expressed</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── What Was Wrong / What Was Fixed / What Was Decided ── -->
+  <section class="report-section">
+    <div class="section-header">
+      <div class="section-number">02</div>
+      <div>
+        <h2 class="section-title">Three Pillars</h2>
+        <p class="section-sub">What the scan found · what the optimize fixed · what the advisory settled</p>
+      </div>
+    </div>
+
+    <div class="pillar-grid">
+      <div class="pillar-card" style="background:#1a1014; border-color:rgba(248,113,113,0.25);">
+        <div class="pillar-icon">🔍</div>
+        <div class="pillar-label" style="color:#f87171;">What Was Wrong — /scan</div>
+        <div class="pillar-title">5 Violations, 2 Missing Beliefs</div>
+        <ul class="pillar-list">
+          <li>10 positions — profile cap is 7 (hard violation)</li>
+          <li>AVGO, VRT, AMZN — single stocks, ETFs only required</li>
+          <li>BNDW 16% — long-duration bonds in a "rates higher for longer" environment (–18% in 2022)</li>
+          <li>0% inflation coverage despite Belief #1 being "inflation elevated"</li>
+          <li>0% commodity exposure despite Belief #4 being "commodities benefit"</li>
+          <li>~36% effective tech via VTI + XLK + QUAL triple-overlap — too high for "moderate" risk</li>
+        </ul>
+      </div>
+      <div class="pillar-card" style="background:#0d1a14; border-color:rgba(167,139,250,0.2);">
+        <div class="pillar-icon">⚡</div>
+        <div class="pillar-label" style="color:#a78bfa;">What Was Fixed — /optimize</div>
+        <div class="pillar-title">Full Profile Compliance at 7 Positions</div>
+        <ul class="pillar-list">
+          <li>AVGO + VRT + AMZN removed — ETF constraint satisfied, 3 position slots freed</li>
+          <li>QUAL removed — 90%+ overlap with VTI + XLK, zero incremental value</li>
+          <li>BNDW removed — replaced with VTIP (short-duration TIPS, same income slot, opposite rate sensitivity)</li>
+          <li>VTIP 17% added — solves Beliefs #1 (inflation) and #3 (rates) with one instrument</li>
+          <li>PDBC 10% added — directly expresses Belief #4, +40% in 2022 analog scenario</li>
+          <li>Tech reduced from 36% → 22% effective; right-sized for moderate risk profile</li>
+        </ul>
+      </div>
+      <div class="pillar-card" style="background:#0d1a14; border-color:rgba(52,211,153,0.2);">
+        <div class="pillar-icon">🤝</div>
+        <div class="pillar-label" style="color:#34d399;">What Was Decided — Advisory</div>
+        <div class="pillar-title">BNDW Returns as a Rate-Hedge, Not a Thesis</div>
+        <ul class="pillar-list">
+          <li>User proposed BNDW back at 15% — correctly identified that rate uncertainty warrants hedging</li>
+          <li>Diagnosed: BNDW 15% vs VTIP 10% was inverted — the hedge was larger than the conviction position</li>
+          <li>Resolution: BNDW 12% as insurance (not thesis), VTIP 12% as rate/inflation anchor</li>
+          <li>8-position violation of the 7-cap consciously accepted as a trade-off for optionality</li>
+          <li>PDBC trimmed 10% → 8%; VXUS set at 9%; XLV 9%; VTI 28%; XLK 10%; SCHD 12%</li>
+          <li>Net result: all 4 beliefs expressed, BNDW as explicit rate-uncertainty hedge</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── Final Agreed Portfolio ──────────────────────────────── -->
+  <section class="report-section">
+    <div class="section-header">
+      <div class="section-number">03</div>
+      <div>
+        <h2 class="section-title">Final Agreed Portfolio</h2>
+        <p class="section-sub">8-position execution-ready allocation — every position has a defined role</p>
+      </div>
+    </div>
+
+    <div class="card">
+      <table class="final-tbl">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Ticker</th>
+            <th>Name</th>
+            <th>Weight</th>
+            <th>Role</th>
+            <th>Belief</th>
+            <th>ER</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td style="color:var(--text-muted); font-size:11px; font-family:var(--font-mono);">01</td>
+            <td><span class="ticker-badge">VTI</span></td>
+            <td style="font-size:12px; color:var(--text-secondary);">Vanguard Total Stock Market ETF</td>
+            <td>
+              <div style="display:flex; align-items:center; gap:8px;">
+                <div style="width:90px; height:8px; background:var(--border); border-radius:4px; overflow:hidden;">
+                  <div style="width:28%; height:100%; background:#6c8aff; border-radius:4px;"></div>
+                </div>
+                <span style="font-family:var(--font-mono); font-weight:800; font-size:14px; color:#6c8aff;">28%</span>
+              </div>
+            </td>
+            <td style="font-size:12px; color:var(--text-secondary);">US equity core</td>
+            <td><span class="belief-b b-tech">Tech look-through</span></td>
+            <td style="font-family:var(--font-mono); font-size:12px; color:var(--green);">0.03%</td>
+          </tr>
+          <tr>
+            <td style="color:var(--text-muted); font-size:11px; font-family:var(--font-mono);">02</td>
+            <td><span class="ticker-badge">SCHD</span></td>
+            <td style="font-size:12px; color:var(--text-secondary);">Schwab US Dividend Equity ETF</td>
+            <td>
+              <div style="display:flex; align-items:center; gap:8px;">
+                <div style="width:90px; height:8px; background:var(--border); border-radius:4px; overflow:hidden;">
+                  <div style="width:12%; height:100%; background:#fbbf24; border-radius:4px;"></div>
+                </div>
+                <span style="font-family:var(--font-mono); font-weight:800; font-size:14px; color:#fbbf24;">12%</span>
+              </div>
+            </td>
+            <td style="font-size:12px; color:var(--text-secondary);">Income + value factor</td>
+            <td><span class="belief-b b-income">Income req.</span></td>
+            <td style="font-family:var(--font-mono); font-size:12px; color:var(--green);">0.06%</td>
+          </tr>
+          <tr class="new-pos">
+            <td style="color:var(--text-muted); font-size:11px; font-family:var(--font-mono);">03</td>
+            <td><span class="ticker-badge" style="background:#0d3326; color:#34d399; border-color:rgba(52,211,153,0.4);">VTIP</span></td>
+            <td style="font-size:12px; color:var(--text-secondary);">Vanguard Short-Term TIPS ETF</td>
+            <td>
+              <div style="display:flex; align-items:center; gap:8px;">
+                <div style="width:90px; height:8px; background:var(--border); border-radius:4px; overflow:hidden;">
+                  <div style="width:12%; height:100%; background:#34d399; border-radius:4px;"></div>
+                </div>
+                <span style="font-family:var(--font-mono); font-weight:800; font-size:14px; color:#34d399;">12%</span>
+              </div>
+            </td>
+            <td style="font-size:12px; color:var(--text-secondary);">Inflation hedge · rate-safe anchor</td>
+            <td><span class="belief-b b-inflation">Inflation #1</span> <span class="belief-b b-rates">Rates #3</span></td>
+            <td style="font-family:var(--font-mono); font-size:12px; color:var(--green);">0.04%</td>
+          </tr>
+          <tr>
+            <td style="color:var(--text-muted); font-size:11px; font-family:var(--font-mono);">04</td>
+            <td><span class="ticker-badge">XLK</span></td>
+            <td style="font-size:12px; color:var(--text-secondary);">Technology Select Sector SPDR</td>
+            <td>
+              <div style="display:flex; align-items:center; gap:8px;">
+                <div style="width:90px; height:8px; background:var(--border); border-radius:4px; overflow:hidden;">
+                  <div style="width:10%; height:100%; background:#a78bfa; border-radius:4px;"></div>
+                </div>
+                <span style="font-family:var(--font-mono); font-weight:800; font-size:14px; color:#a78bfa;">10%</span>
+              </div>
+            </td>
+            <td style="font-size:12px; color:var(--text-secondary);">Direct tech belief expression</td>
+            <td><span class="belief-b b-tech">Tech #2</span></td>
+            <td style="font-family:var(--font-mono); font-size:12px; color:var(--green);">0.09%</td>
+          </tr>
+          <tr>
+            <td style="color:var(--text-muted); font-size:11px; font-family:var(--font-mono);">05</td>
+            <td><span class="ticker-badge">VXUS</span></td>
+            <td style="font-size:12px; color:var(--text-secondary);">Vanguard Total International Stock ETF</td>
+            <td>
+              <div style="display:flex; align-items:center; gap:8px;">
+                <div style="width:90px; height:8px; background:var(--border); border-radius:4px; overflow:hidden;">
+                  <div style="width:9%; height:100%; background:#a78bfa; border-radius:4px;"></div>
+                </div>
+                <span style="font-family:var(--font-mono); font-weight:800; font-size:14px; color:#a78bfa;">9%</span>
+              </div>
+            </td>
+            <td style="font-size:12px; color:var(--text-secondary);">Geographic diversifier · USD hedge</td>
+            <td><span class="belief-b b-defensive">Diversifier</span></td>
+            <td style="font-family:var(--font-mono); font-size:12px; color:var(--green);">0.07%</td>
+          </tr>
+          <tr>
+            <td style="color:var(--text-muted); font-size:11px; font-family:var(--font-mono);">06</td>
+            <td><span class="ticker-badge">XLV</span></td>
+            <td style="font-size:12px; color:var(--text-secondary);">Health Care Select Sector SPDR</td>
+            <td>
+              <div style="display:flex; align-items:center; gap:8px;">
+                <div style="width:90px; height:8px; background:var(--border); border-radius:4px; overflow:hidden;">
+                  <div style="width:9%; height:100%; background:#60a5fa; border-radius:4px;"></div>
+                </div>
+                <span style="font-family:var(--font-mono); font-weight:800; font-size:14px; color:#60a5fa;">9%</span>
+              </div>
+            </td>
+            <td style="font-size:12px; color:var(--text-secondary);">Defensive anchor · recession buffer</td>
+            <td><span class="belief-b b-defensive">Defensive</span></td>
+            <td style="font-family:var(--font-mono); font-size:12px; color:var(--green);">0.09%</td>
+          </tr>
+          <tr class="new-pos">
+            <td style="color:var(--text-muted); font-size:11px; font-family:var(--font-mono);">07</td>
+            <td><span class="ticker-badge" style="background:#0d3326; color:#34d399; border-color:rgba(52,211,153,0.4);">PDBC</span></td>
+            <td style="font-size:12px; color:var(--text-secondary);">Invesco Optimum Yield Diversified Commodity</td>
+            <td>
+              <div style="display:flex; align-items:center; gap:8px;">
+                <div style="width:90px; height:8px; background:var(--border); border-radius:4px; overflow:hidden;">
+                  <div style="width:8%; height:100%; background:#fb923c; border-radius:4px;"></div>
+                </div>
+                <span style="font-family:var(--font-mono); font-weight:800; font-size:14px; color:#fb923c;">8%</span>
+              </div>
+            </td>
+            <td style="font-size:12px; color:var(--text-secondary);">Broad commodity basket</td>
+            <td><span class="belief-b b-commodity">Commodity #4</span> <span class="belief-b b-inflation">Inflation #1</span></td>
+            <td style="font-family:var(--font-mono); font-size:12px; color:var(--yellow);">0.59%</td>
+          </tr>
+          <tr class="hedge-pos">
+            <td style="color:var(--text-muted); font-size:11px; font-family:var(--font-mono);">08</td>
+            <td><span class="ticker-badge" style="border-color:rgba(251,191,36,0.4);">BNDW</span></td>
+            <td style="font-size:12px; color:var(--text-secondary);">Vanguard Total World Bond ETF <span style="background:#3d2c05; color:#fbbf24; border:1px solid rgba(251,191,36,0.3); padding:1px 6px; border-radius:10px; font-size:10px; font-weight:700; margin-left:4px;">HEDGE</span></td>
+            <td>
+              <div style="display:flex; align-items:center; gap:8px;">
+                <div style="width:90px; height:8px; background:var(--border); border-radius:4px; overflow:hidden;">
+                  <div style="width:12%; height:100%; background:#fbbf24; border-radius:4px;"></div>
+                </div>
+                <span style="font-family:var(--font-mono); font-weight:800; font-size:14px; color:#fbbf24;">12%</span>
+              </div>
+            </td>
+            <td style="font-size:12px; color:var(--text-secondary);">Rate-cut insurance · not a thesis position</td>
+            <td><span class="belief-b b-hedge">Rate uncertainty hedge</span></td>
+            <td style="font-family:var(--font-mono); font-size:12px; color:var(--green);">0.05%</td>
+          </tr>
+        </tbody>
+      </table>
+      <div style="margin-top:14px; display:flex; gap:24px; flex-wrap:wrap; padding:12px 14px; background:var(--bg-card-alt); border-radius:var(--radius-sm);">
+        <span style="font-size:12px; color:var(--text-secondary);">Blended ER: <strong style="font-family:var(--font-mono); color:var(--green);">~0.16%</strong></span>
+        <span style="font-size:12px; color:var(--text-secondary);">Equity weight: <strong style="font-family:var(--font-mono); color:var(--text-primary);">56%</strong></span>
+        <span style="font-size:12px; color:var(--text-secondary);">Real assets + TIPS: <strong style="font-family:var(--font-mono); color:var(--green);">20%</strong></span>
+        <span style="font-size:12px; color:var(--text-secondary);">Fixed income: <strong style="font-family:var(--font-mono); color:var(--text-primary);">24%</strong></span>
+        <span style="font-size:12px; color:var(--text-secondary);">Rebalancing frequency: <strong style="color:var(--green);">Annual</strong></span>
+      </div>
+      <div style="margin-top:10px; padding:12px 14px; background:#1a1810; border:1px solid rgba(251,191,36,0.2); border-radius:var(--radius-sm);">
+        <p style="font-size:12px; color:#d4b483; margin:0; line-height:1.6;">
+          ⚠ <strong>BNDW is a hedge, not a conviction position.</strong> If the rate environment confirms "higher for longer," BNDW is the first candidate for trimming. At 12%, a –18% BNDW year costs –2.2% at the portfolio level — offset by PDBC (+3.2% in 2022 commodity analog) and VTIP softness-protection. The pair is tolerable but intentionally self-hedging.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── Before vs After Comparison ───────────────────────── -->
+  <section class="report-section">
+    <div class="section-header">
+      <div class="section-number">04</div>
+      <div>
+        <h2 class="section-title">Original vs Final — Full Comparison</h2>
+        <p class="section-sub">Every dimension quantified across the rebuild</p>
+      </div>
+    </div>
+
+    <div class="card">
+      <table class="cmp-tbl">
+        <thead>
+          <tr>
+            <th>Dimension</th>
+            <th style="color:#f87171;">Original IRA</th>
+            <th style="color:#34d399;">Final Agreed</th>
+            <th>Δ</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td style="font-weight:600;">Position count</td>
+            <td style="color:#f87171; font-family:var(--font-mono); font-weight:700;">10</td>
+            <td style="color:#34d399; font-family:var(--font-mono); font-weight:700;">8</td>
+            <td style="font-size:12px; color:var(--text-secondary);">–2 (–3 stocks removed, +2 new ETFs added, –1 via QUAL consolidation)</td>
+          </tr>
+          <tr>
+            <td style="font-weight:600;">Single stocks</td>
+            <td style="color:#f87171; font-family:var(--font-mono); font-weight:700;">3</td>
+            <td style="color:#34d399; font-family:var(--font-mono); font-weight:700;">0</td>
+            <td style="font-size:12px; color:var(--text-secondary);">AVGO, VRT, AMZN all eliminated</td>
+          </tr>
+          <tr>
+            <td style="font-weight:600;">Effective tech exposure</td>
+            <td style="color:#f87171; font-family:var(--font-mono); font-weight:700;">~36%</td>
+            <td style="color:#34d399; font-family:var(--font-mono); font-weight:700;">~22%</td>
+            <td style="font-size:12px; color:var(--text-secondary);">–14pp. Right-sized for moderate risk profile.</td>
+          </tr>
+          <tr>
+            <td style="font-weight:600;">Inflation coverage</td>
+            <td style="color:#f87171; font-family:var(--font-mono); font-weight:700;">0%</td>
+            <td style="color:#34d399; font-family:var(--font-mono); font-weight:700;">20%</td>
+            <td style="font-size:12px; color:var(--text-secondary);">+20pp. VTIP 12% + PDBC 8% (partial)</td>
+          </tr>
+          <tr>
+            <td style="font-weight:600;">Commodity exposure</td>
+            <td style="color:#f87171; font-family:var(--font-mono); font-weight:700;">0%</td>
+            <td style="color:#34d399; font-family:var(--font-mono); font-weight:700;">8%</td>
+            <td style="font-size:12px; color:var(--text-secondary);">Belief #4 now expressed for first time</td>
+          </tr>
+          <tr>
+            <td style="font-weight:600;">Beliefs expressed</td>
+            <td style="color:#f87171; font-family:var(--font-mono); font-weight:700;">1 / 4</td>
+            <td style="color:#34d399; font-family:var(--font-mono); font-weight:700;">4 / 4</td>
+            <td style="font-size:12px; color:var(--text-secondary);">All 4 macro beliefs now have explicit ETF expression</td>
+          </tr>
+          <tr>
+            <td style="font-weight:600;">Blended ER</td>
+            <td style="color:var(--text-secondary); font-family:var(--font-mono);">~0.18%</td>
+            <td style="color:#34d399; font-family:var(--font-mono); font-weight:700;">~0.16%</td>
+            <td style="font-size:12px; color:var(--text-secondary);">Slight improvement despite adding PDBC (0.59%); single stocks had hidden implicit costs</td>
+          </tr>
+          <tr>
+            <td style="font-weight:600;">2022 analog loss (est.)</td>
+            <td style="color:#f87171; font-family:var(--font-mono); font-weight:700;">–30 to –33%</td>
+            <td style="color:#34d399; font-family:var(--font-mono); font-weight:700;">–10 to –13%</td>
+            <td style="font-size:12px; color:var(--text-secondary);">~20pp improvement — PDBC +40%, VTIP –5%, BNDW drag contained</td>
+          </tr>
+          <tr>
+            <td style="font-weight:600;">Profile violations</td>
+            <td style="color:#f87171; font-family:var(--font-mono); font-weight:700;">5</td>
+            <td style="color:#fbbf24; font-family:var(--font-mono); font-weight:700;">1*</td>
+            <td style="font-size:12px; color:var(--text-secondary);">*8 positions vs 7-cap — consciously accepted trade-off for rate optionality</td>
+          </tr>
+          <tr>
+            <td style="font-weight:600;">Overall grade</td>
+            <td style="color:#f87171; font-family:var(--font-mono); font-weight:700; font-size:20px;">D+</td>
+            <td style="color:#34d399; font-family:var(--font-mono); font-weight:700; font-size:20px;">B</td>
+            <td style="font-size:12px; color:var(--text-secondary);">B+ achievable by shifting BNDW 12%→7%, VTIP 12%→17%</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ── Stress Tests ──────────────────────────────────────── -->
+  <section class="report-section">
+    <div class="section-header">
+      <div class="section-number">05</div>
+      <div>
+        <h2 class="section-title">Stress Tests — Final Portfolio</h2>
+        <p class="section-sub">Modeled returns across five macro regimes</p>
+      </div>
+    </div>
+
+    <div class="card">
+      <table class="stress-tbl">
+        <thead>
+          <tr>
+            <th>Regime</th>
+            <th>Est. Return</th>
+            <th>Original IRA (analog)</th>
+            <th>Improvement</th>
+            <th>Key Drivers</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr style="background:rgba(52,211,153,0.03);">
+            <td style="font-weight:600;">2022 Rate + Tech Shock ★</td>
+            <td>
+              <div class="draw-bar">
+                <div class="draw-fill" style="width:13%; background:#fbbf24;"></div>
+                <span class="draw-lbl" style="color:#fbbf24;">–10 to –13%</span>
+              </div>
+            </td>
+            <td style="font-family:var(--font-mono); font-size:12px; color:#f87171;">–30 to –33%</td>
+            <td style="color:#34d399; font-size:12px; font-weight:700;">+20pp</td>
+            <td style="font-size:12px; color:var(--text-secondary);">PDBC +40% (+3.2%), VTIP –5% (–0.6%), BNDW –18% (–2.2%), SCHD +4%</td>
+          </tr>
+          <tr>
+            <td style="font-weight:600;">Stagflation</td>
+            <td>
+              <div class="draw-bar">
+                <div class="draw-fill" style="width:5%; background:#fbbf24;"></div>
+                <span class="draw-lbl" style="color:#fbbf24;">–2 to +5%</span>
+              </div>
+            </td>
+            <td style="font-family:var(--font-mono); font-size:12px; color:#f87171;">–30 to –40%</td>
+            <td style="color:#34d399; font-size:12px; font-weight:700;">+30–40pp</td>
+            <td style="font-size:12px; color:var(--text-secondary);">VTIP + PDBC combined 20% provide substantial inflation shelter</td>
+          </tr>
+          <tr>
+            <td style="font-weight:600;">GFC / Deep Recession</td>
+            <td>
+              <div class="draw-bar">
+                <div class="draw-fill" style="width:30%; background:#f87171;"></div>
+                <span class="draw-lbl" style="color:#f87171;">–28 to –33%</span>
+              </div>
+            </td>
+            <td style="font-family:var(--font-mono); font-size:12px; color:#f87171;">–32 to –40%</td>
+            <td style="color:#fbbf24; font-size:12px; font-weight:700;">Modest improvement</td>
+            <td style="font-size:12px; color:var(--text-secondary);">BNDW benefits (flight to safety), XLV + SCHD cushion. PDBC hurts.</td>
+          </tr>
+          <tr>
+            <td style="font-weight:600;">COVID Shock (Q1 2020)</td>
+            <td>
+              <div class="draw-bar">
+                <div class="draw-fill" style="width:22%; background:#f87171;"></div>
+                <span class="draw-lbl" style="color:#f87171;">–18 to –22%</span>
+              </div>
+            </td>
+            <td style="font-family:var(--font-mono); font-size:12px; color:#f87171;">–24 to –30%</td>
+            <td style="color:#34d399; font-size:12px; font-weight:700;">+6pp</td>
+            <td style="font-size:12px; color:var(--text-secondary);">BNDW rallies (flight to bonds), VTIP stable. Recovery swift post-shock.</td>
+          </tr>
+          <tr>
+            <td style="font-weight:600;">Bull / Risk-On</td>
+            <td>
+              <div class="draw-bar">
+                <div class="draw-fill" style="width:0%; background:var(--green);"></div>
+                <span class="draw-lbl" style="color:#34d399;">+18 to +24%</span>
+              </div>
+            </td>
+            <td style="font-family:var(--font-mono); font-size:12px; color:#34d399;">+40 to +60%</td>
+            <td style="color:#f87171; font-size:12px; font-weight:700;">Lower upside</td>
+            <td style="font-size:12px; color:var(--text-secondary);">Deliberate trade-off: better diversification = lower peak returns in best-case scenario.</td>
+          </tr>
+        </tbody>
+      </table>
+      <p style="font-size:11px; color:var(--text-muted); margin-top:10px;">★ = user's stated belief scenario · All figures modeled estimates based on historical analogs</p>
+    </div>
+  </section>
+
+  <!-- ── Advisory Summary ──────────────────────────────────── -->
+  <section class="report-section">
+    <div class="section-header">
+      <div class="section-number">06</div>
+      <div>
+        <h2 class="section-title">Key Advisory Decisions</h2>
+        <p class="section-sub">The three judgment calls made during the process</p>
+      </div>
+    </div>
+
+    <div class="advisory-grid">
+      <div class="advisory-cell" style="background:#0d1a14; border-color:rgba(52,211,153,0.2);">
+        <div style="font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:0.06em; color:#34d399; margin-bottom:8px;">Decision 1 — BNDW Eliminated in Optimize</div>
+        <p style="font-size:13px; color:var(--text-secondary); line-height:1.7; margin:0;">The /optimize pass removed BNDW entirely because it directly contradicted the "rates higher for longer" belief. In isolation, this was the logically correct call for a conviction portfolio.</p>
+      </div>
+      <div class="advisory-cell" style="background:#1a1810; border-color:rgba(251,191,36,0.2);">
+        <div style="font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:0.06em; color:#fbbf24; margin-bottom:8px;">Decision 2 — User Re-introduced BNDW</div>
+        <p style="font-size:13px; color:var(--text-secondary); line-height:1.7; margin:0;">User's instinct to keep a rate-downside hedge was sound — the rate path is genuinely uncertain. The error was proposing BNDW at 15% vs VTIP at 10%, which inverted the primary/hedge relationship.</p>
+      </div>
+      <div class="advisory-cell" style="background:#141824; border-color:rgba(96,165,250,0.2);">
+        <div style="font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:0.06em; color:#60a5fa; margin-bottom:8px;">Decision 3 — BNDW Demoted to 12% Hedge</div>
+        <p style="font-size:13px; color:var(--text-secondary); line-height:1.7; margin:0;">Agreed to BNDW 12%, VTIP 12% — equal weight. Not ideal (VTIP should lead for belief alignment) but reflects genuine uncertainty. BNDW's role is explicit: rate-cut insurance, not a thesis expression.</p>
+      </div>
+      <div class="advisory-cell" style="background:#0d1a14; border-color:rgba(52,211,153,0.2);">
+        <div style="font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:0.06em; color:#34d399; margin-bottom:8px;">Remaining Optional Improvement</div>
+        <p style="font-size:13px; color:var(--text-secondary); line-height:1.7; margin:0;">BNDW 12%→7%, VTIP 12%→17% would push the grade from B to B+. Only 2 rebalancing trades. Execute if "rates higher for longer" conviction strengthens.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── What to Watch ─────────────────────────────────────── -->
+  <section class="report-section">
+    <div class="section-header">
+      <div class="section-number">07</div>
+      <div>
+        <h2 class="section-title">What to Watch</h2>
+        <p class="section-sub">Conditions that should trigger a rebalance or position review</p>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="watch-row">
+        <div class="watch-num">01</div>
+        <div>
+          <div style="font-weight:700; font-size:14px; margin-bottom:3px; color:var(--text-primary);">Fed signals a rate-cut cycle (2+ cuts priced in)</div>
+          <div style="font-size:13px; color:var(--text-secondary); line-height:1.6;"><strong>Action:</strong> Increase BNDW from 12%→18%, reduce VTIP from 12%→8%. The rate-path uncertainty shifts — BNDW becomes a conviction position rather than a hedge. PDBC may also soften in a disinflationary rate-cut environment.</div>
+        </div>
+      </div>
+      <div class="watch-row">
+        <div class="watch-num">02</div>
+        <div>
+          <div style="font-weight:700; font-size:14px; margin-bottom:3px; color:var(--text-primary);">Inflation re-accelerates above 4%</div>
+          <div style="font-size:13px; color:var(--text-secondary); line-height:1.6;"><strong>Action:</strong> Trim BNDW from 12%→5–7%, increase VTIP toward 17–18%. Conviction on Beliefs #1 and #3 is confirmed. PDBC may also warrant a bump toward 10–12%.</div>
+        </div>
+      </div>
+      <div class="watch-row">
+        <div class="watch-num">03</div>
+        <div>
+          <div style="font-weight:700; font-size:14px; margin-bottom:3px; color:var(--text-primary);">XLK underperforms VTI by &gt;15% over 12 months</div>
+          <div style="font-size:13px; color:var(--text-secondary); line-height:1.6;"><strong>Action:</strong> Review the tech leadership belief. If the divergence is structural (not cyclical), reducing XLK from 10%→5% and reallocating to VXUS or XLV would be appropriate. The belief is the reason XLK exists in the portfolio.</div>
+        </div>
+      </div>
+      <div class="watch-row">
+        <div class="watch-num">04</div>
+        <div>
+          <div style="font-weight:700; font-size:14px; margin-bottom:3px; color:var(--text-primary);">Commodity cycle peaks (DBC/PDBC –30%+ from highs)</div>
+          <div style="font-size:13px; color:var(--text-secondary); line-height:1.6;"><strong>Action:</strong> Trim PDBC from 8%→4%, redistribute to VTI or VTIP. The commodity belief has been expressed and partially realized. Chasing a declining commodity cycle is outside the profile's risk tolerance.</div>
+        </div>
+      </div>
+      <div class="watch-row">
+        <div class="watch-num">05</div>
+        <div>
+          <div style="font-weight:700; font-size:14px; margin-bottom:3px; color:var(--text-primary);">Annual rebalancing — bands approach</div>
+          <div style="font-size:13px; color:var(--text-secondary); line-height:1.6;"><strong>Rule:</strong> Rebalance annually or when any position drifts ±5pp from target (e.g., VTI rises to 33%+ or falls below 23%). Low-maintenance profile means no intra-year tactical moves unless a watch condition above is triggered.</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── Final Grade ───────────────────────────────────────── -->
+  <section class="report-section">
+    <div class="section-header">
+      <div class="section-number">08</div>
+      <div>
+        <h2 class="section-title">Final Assessment</h2>
+        <p class="section-sub">Objective grade on the agreed execution-ready allocation</p>
+      </div>
+    </div>
+
+    <div class="grade-band">
+      <div class="grade-letter" style="color:#60a5fa; text-shadow:0 0 40px rgba(96,165,250,0.3);">B</div>
+      <div>
+        <h3 style="font-size:20px; font-weight:800; margin-bottom:10px;">Execution-Ready. Materially Better Than Where You Started.</h3>
+        <p style="font-size:14px; color:var(--text-secondary); line-height:1.8;">The IRA portfolio moved from a non-compliant, belief-contradicting D+ to a structurally sound B across this session. All four macro beliefs are expressed. The equity sleeve is clean — no single stocks, no redundant overlaps, tech right-sized. PDBC and VTIP address the two gaps the original portfolio had completely ignored. The B ceiling is specifically BNDW and VTIP at equal weight creating a self-hedging fixed income pair — the only remaining tension. This is a conscious, documented trade-off, not an error. Execute when ready. Revisit BNDW weighting when the rate path clarifies.</p>
+      </div>
+    </div>
+
+    <div class="scan-scorecard">
+      <div class="score-item">
+        <div class="score-label">Profile Compliance</div>
+        <div class="score-grade grade-b">B+</div>
+        <div class="score-sub">8 vs 7 cap — consciously accepted</div>
+      </div>
+      <div class="score-item">
+        <div class="score-label">Belief Alignment</div>
+        <div class="score-grade grade-b">B</div>
+        <div class="score-sub">4/4 expressed · BNDW dilutes #3</div>
+      </div>
+      <div class="score-item">
+        <div class="score-label">Diversification</div>
+        <div class="score-grade grade-a">A–</div>
+        <div class="score-sub">3 risk factors · avg corr ~0.60</div>
+      </div>
+      <div class="score-item">
+        <div class="score-label">Downside Defense</div>
+        <div class="score-grade grade-b">B+</div>
+        <div class="score-sub">2022 analog: –10~13% vs –33%</div>
+      </div>
+      <div class="score-item">
+        <div class="score-label">Cost Efficiency</div>
+        <div class="score-grade grade-a">A</div>
+        <div class="score-sub">0.16% blended ER</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── Footer ────────────────────────────────────────────── -->
+  <footer class="page-footer">
+    <div class="footer-text">Portfolio Intelligence · IRA Portfolio Executive Summary · Feb 22, 2026</div>
+    <div class="footer-disclaimer">For informational purposes only. Not financial advice. All projected returns and drawdown estimates are historical analogs and modeled approximations. They are not guarantees of future performance. Expense ratios sourced from fund provider websites and subject to change.</div>
+  </footer>
+
+</div><!-- /page-wrapper -->
+
+<script>
+  function exportPDF() { window.print(); }
+</script>
+</body>
+</html>
